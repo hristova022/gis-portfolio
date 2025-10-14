@@ -1,345 +1,123 @@
 import streamlit as st
-import pandas as pd
-import json
-import pydeck as pdk
-import plotly.express as px
-import plotly.graph_objects as go
 
-st.set_page_config(page_title="LA County Homeless Analysis | GIS Portfolio", page_icon="🏠", layout="wide")
+st.set_page_config(
+    page_title="GIS & AI Portfolio | Luba Hristova",
+    page_icon="🗺️",
+    layout="wide"
+)
 
-st.title("🏠 LA County Homeless Services: Are We Keeping Pace?")
+st.title("🗺️ GIS & AI Solutions Portfolio")
+st.subheader("Luba Hristova | Solutions Engineer")
 
-@st.cache_data
-def load_data():
-    url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/la_county_homeless_temporal.json"
-    try:
-        import requests
-        response = requests.get(url)
-        data = response.json()
-        return data
-    except:
-        st.error("Could not load temporal data. Loading basic data instead...")
-        url_basic = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/homeless_services_data.json"
-        response = requests.get(url_basic)
-        return response.json()
-
-data = load_data()
-has_temporal = 'homeless_trends' in data
-
-if has_temporal:
-    st.markdown(f"""
-    ## 📈 The Gap is Widening
-    
-    **From 2015 to 2025, LA County's homeless population grew {data['gap_analysis']['homeless_growth_pct']:.1f}% 
-    while shelter capacity increased only {data['gap_analysis']['shelter_capacity_growth_pct']:.1f}%.**
-    
-    Despite adding {data['summary']['new_facilities_since_2015']} new facilities, there are now 
-    **{data['gap_analysis']['beds_per_100_now']:.1f} beds per 100 homeless individuals** 
-    (down from {data['gap_analysis']['beds_per_100_then']:.1f} in 2015).
-    
-    By 2027, we'll need **{data['forecast_2027']['additional_beds_needed']:,} additional beds** 
-    just to maintain current service levels.
-    """)
-    
-    st.divider()
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.markdown("### 📅 View Services By Year")
-        selected_year = st.select_slider("Select Year", options=[2015, 2018, 2020, 2023, 2025], value=2025)
-        
-        df_trends = pd.DataFrame(data['homeless_trends'])
-        year_data = df_trends[df_trends['year'] == selected_year].iloc[0] if selected_year in df_trends['year'].values else df_trends.iloc[-1]
-        
-        st.metric("Homeless Count", f"{int(year_data['homeless_count']):,}")
-        st.metric("Shelter Beds", f"{int(year_data['total_beds']):,}")
-        st.metric("Beds per 100", f"{year_data['beds_per_100_homeless']:.1f}")
-    
-    with col2:
-        st.markdown("### 📊 The Growing Gap: 2015-2025")
-        
-        df_trends_norm = df_trends.copy()
-        df_trends_norm['homeless_index'] = (df_trends_norm['homeless_count'] / df_trends_norm['homeless_count'].iloc[0]) * 100
-        df_trends_norm['beds_index'] = (df_trends_norm['total_beds'] / df_trends_norm['total_beds'].iloc[0]) * 100
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Scatter(
-            x=df_trends_norm['year'], y=df_trends_norm['homeless_index'],
-            name='Homeless Population', line=dict(color='red', width=3), mode='lines+markers'
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=df_trends_norm['year'], y=df_trends_norm['beds_index'],
-            name='Shelter Capacity', line=dict(color='green', width=3), mode='lines+markers'
-        ))
-        
-        fig.update_layout(
-            yaxis_title='Growth Index (2015 = 100)', xaxis_title='Year',
-            hovermode='x unified', height=300, margin=dict(l=0, r=0, t=20, b=0), showlegend=True
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        st.caption("📈 Both metrics indexed to 2015 baseline (100) to show relative growth")
-    
-    st.divider()
-    
-    df_facilities = pd.DataFrame(data['historical_facilities'])
-    df_year_facilities = df_facilities[df_facilities['year'] <= selected_year].drop_duplicates(subset=['name'])
-else:
-    st.markdown("### Why This Matters\n\nWhen someone experiencing homelessness needs help, **every mile matters**.")
-    st.divider()
-    df_year_facilities = pd.DataFrame(data['services'])
-    selected_year = 2025
-
-col1, col2, col3, col4 = st.columns(4)
-
-if has_temporal:
-    with col1:
-        st.metric(f"Services in {selected_year}", len(df_year_facilities))
-    with col2:
-        st.metric("Emergency Shelters", len(df_year_facilities[df_year_facilities['type'] == 'shelter']))
-    with col3:
-        st.metric("Current Homeless", f"{data['summary']['current_homeless_count']:,}")
-    with col4:
-        gap_pct = data['gap_analysis']['homeless_growth_pct'] - data['gap_analysis']['shelter_capacity_growth_pct']
-        st.metric("Service Gap", f"+{gap_pct:.1f}%", delta_color="inverse")
-else:
-    stats = data.get('stats', {})
-    with col1:
-        st.metric("Total Services", stats.get('total_services', len(df_year_facilities)))
-    with col2:
-        st.metric("Shelters", stats.get('shelters', 0))
-    with col3:
-        st.metric("Food Banks", stats.get('food_banks', 0))
-    with col4:
-        st.metric("Support Centers", stats.get('support_centers', 0))
+st.markdown("""
+**Long Beach, CA** | [LinkedIn](https://linkedin.com/in/luba-hristova) | [GitHub](https://github.com/hristova022)
+""")
 
 st.divider()
 
-# Filters with explanations
-st.markdown("### 🔍 Filter Services")
-st.caption("Narrow down the facilities shown on the map using the filters below")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    service_types_raw = ['All'] + sorted(df_year_facilities['type'].unique().tolist())
-    service_types_display = {
-        'All': 'All Services',
-        'shelter': 'Emergency Shelters',
-        'food_bank': 'Food Banks & Meal Programs',
-        'social_facility': 'Support Services & Programs'
-    }
-    selected_type_display = st.selectbox(
-        "Service Type", 
-        [service_types_display.get(t, t) for t in service_types_raw],
-        help="Filter by the type of service provided"
-    )
-    selected_type = [k for k, v in service_types_display.items() if v == selected_type_display][0]
-
-with col2:
-    cities = ['All'] + sorted([c for c in df_year_facilities['city'].unique() if c])
-    selected_city = st.selectbox(
-        "City", 
-        cities,
-        help="Focus on facilities in a specific city"
-    )
-
-with col3:
-    search_term = st.text_input(
-        "Search Facility Name", 
-        placeholder="e.g., Union Rescue",
-        help="Search for a specific facility by name"
-    )
-
-# Apply filters
-filtered_df = df_year_facilities.copy()
-if selected_type != 'All':
-    filtered_df = filtered_df[filtered_df['type'] == selected_type]
-if selected_city != 'All':
-    filtered_df = filtered_df[filtered_df['city'] == selected_city]
-if search_term:
-    filtered_df = filtered_df[filtered_df['name'].str.contains(search_term, case=False, na=False)]
-
-st.divider()
-
-# Map section
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader(f"📍 Service Locations Map - {selected_year}")
-    st.caption("Zoom and pan to explore. Hover over markers for facility details.")
+    st.markdown("""
+    ## About This Portfolio
     
-    def get_color(service_type):
-        colors = {'shelter': [255, 0, 0, 200], 'food_bank': [0, 200, 0, 200], 'social_facility': [0, 100, 255, 200]}
-        return colors.get(service_type, [128, 128, 128, 200])
+    Interactive case studies demonstrating real-world applications of GIS analysis, 
+    AI/ML, and spatial data science for community impact and disaster response.
     
-    def get_type_label(service_type):
-        labels = {'shelter': 'Emergency Shelter', 'food_bank': 'Food Bank / Meal Program', 'social_facility': 'Support Services'}
-        return labels.get(service_type, service_type)
+    Each project uses **free, open-source tools** and **publicly available data** to solve 
+    practical problems in Long Beach and Southern California.
     
-    filtered_df['color'] = filtered_df['type'].apply(get_color)
-    filtered_df['type_label'] = filtered_df['type'].apply(get_type_label)
-    
-    # Dynamic zoom based on city selection
-    city_centers = {
-        'Long Beach': {'lat': 33.77, 'lon': -118.15, 'zoom': 11.5},
-        'Los Angeles': {'lat': 34.05, 'lon': -118.24, 'zoom': 11},
-        'Pasadena': {'lat': 34.15, 'lon': -118.14, 'zoom': 12},
-        'Santa Monica': {'lat': 34.02, 'lon': -118.49, 'zoom': 12},
-    }
-    
-    if selected_city in city_centers:
-        view_center = city_centers[selected_city]
-    else:
-        view_center = {'lat': 33.95, 'lon': -118.35, 'zoom': 9.5}
-    
-    # Service gaps with zoom-responsive sizing
-    if has_temporal:
-        df_coverage = pd.DataFrame(data['coverage_analysis'])
-        gap_areas = df_coverage[df_coverage['service_count'] == 0].copy()
-        gap_areas['color'] = [[255, 165, 0, 30]] * len(gap_areas)
-        gap_areas['name'] = ['Service Gap Zone'] * len(gap_areas)
-        gap_areas['type_label'] = ['Area with no services within 1+ mile'] * len(gap_areas)
-        gap_areas['address'] = [''] * len(gap_areas)
-        gap_areas['city'] = [''] * len(gap_areas)
-        
-        gap_layer = pdk.Layer(
-            'ScatterplotLayer', 
-            data=gap_areas, 
-            get_position='[lon, lat]',
-            get_color='color', 
-            get_radius=1500,
-            radius_min_pixels=5,
-            radius_max_pixels=50,
-            pickable=True
-        )
-    else:
-        gap_layer = None
-    
-    service_layer = pdk.Layer(
-        'ScatterplotLayer', 
-        data=filtered_df, 
-        get_position='[lon, lat]',
-        get_color='color', 
-        get_radius=200,
-        radius_min_pixels=3,
-        radius_max_pixels=20,
-        pickable=True
-    )
-    
-    view_state = pdk.ViewState(
-        latitude=view_center['lat'], 
-        longitude=view_center['lon'], 
-        zoom=view_center['zoom'], 
-        pitch=0
-    )
-    
-    layers = [gap_layer, service_layer] if gap_layer else [service_layer]
-    r = pdk.Deck(
-        layers=layers, 
-        initial_view_state=view_state,
-        tooltip={
-            'html': '<b>{name}</b><br/><i>{type_label}</i><br/>{city}<br/>{address}',
-            'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-        }
-    )
-    
-    # Use key to force map update when city changes
-    st.pydeck_chart(r, key=f"map_{selected_city}_{selected_year}")
+    ### Technical Background
+    - 6+ years experience in GIS, aerial imagery analysis, and AI-powered data insights
+    - Worked with top 10 U.S. insurance companies on disaster response and claims automation
+    - Expertise in ArcGIS Enterprise, Python geospatial stack, and cloud-based solutions
+    """)
 
 with col2:
-    st.subheader("📊 Analysis Summary")
-    
-    # Show filtered results count
-    st.metric("Facilities Shown", len(filtered_df))
-    
-    if has_temporal:
-        # Service type breakdown for filtered results
-        st.markdown("**Services by Type:**")
-        type_counts = filtered_df['type'].value_counts()
-        for service_type, count in type_counts.items():
-            type_label = get_type_label(service_type)
-            st.markdown(f"• {type_label}: {count}")
-        
-        st.markdown("---")
-        st.markdown(f"**Service Gap Areas:** {data['summary']['service_gap_areas']}")
-        st.caption("Orange zones on map show areas lacking nearby services")
-    
     st.markdown("""
-    ---
-    **Map Legend:**
-    - 🔴 **Emergency Shelters** - Overnight housing
-    - 🟢 **Food Banks** - Meals and groceries
-    - 🔵 **Support Services** - Case management, healthcare, job help
-    - 🟠 **Service Gap Zones** - No facilities within walking distance (1+ mile)
+    ### 🛠️ Tech Stack
+    - **GIS:** GeoPandas, Pydeck, QGIS
+    - **ML/AI:** TensorFlow, scikit-learn
+    - **Data:** Pandas, NumPy
+    - **Viz:** Streamlit, Plotly
+    - **Cloud:** Colab, GitHub
+    
+    ### 📊 Data Sources
+    - OpenStreetMap
+    - NOAA, NASA FIRMS
+    - CAL FIRE
+    - LA Homeless Services Authority
+    - Long Beach Open Data
     """)
 
 st.divider()
 
-# Methodology
-st.markdown("### 📊 How This Analysis Was Conducted")
+st.markdown("## 📂 Case Studies")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("""
-    **Data Sources:**
+    with st.container(border=True):
+        st.markdown("### 🏠 LA County Homeless Services Analysis")
+        st.markdown("""
+        **Are we keeping pace with the crisis?**
+        
+        Comprehensive temporal analysis examining LA County's homeless population growth 
+        vs. shelter capacity expansion from 2015-2025.
+        
+        **Key Findings:**
+        - 75.8% increase in homeless population
+        - Only 67.8% increase in shelter capacity
+        - 9 food banks, 6 shelters, 5 support centers mapped
+        - Service gap zones identified across LA County
+        
+        **Skills Demonstrated:** GIS analysis, temporal trends, policy impact assessment, 
+        data visualization, reproducible research
+        """)
+        if st.button("View Full Analysis →", key="homeless", use_container_width=True):
+            st.switch_page("pages/1_Homeless_Resources.py")
     
-    - **OpenStreetMap** - Community-contributed database verified by local organizations across LA County
-    - **Manual Verification** - Cross-referenced with city resources and service providers
-    - **LA Homeless Services Authority** - Historical homeless count data (2015-2025)
-    - **Last Updated:** October 2025
-    """)
+    with st.container(border=True):
+        st.markdown("### 🌊 Sea Level Rise Simulator")
+        st.markdown("""
+        Coastal flooding impact analysis with property risk assessment under 
+        different sea level rise scenarios.
+        
+        **Skills:** Climate modeling, risk assessment, economic impact analysis
+        """)
+        st.markdown("*Coming Soon*")
 
 with col2:
-    st.markdown("""
-    **Analysis Methodology:**
+    with st.container(border=True):
+        st.markdown("### 🔥 Wildfire Risk Dashboard")
+        st.markdown("""
+        Predictive risk modeling for Southern California wildfires with 
+        real-time weather and vegetation data.
+        
+        **Skills:** ML modeling, disaster response, spatial analysis, predictive analytics
+        """)
+        st.markdown("*Coming Soon*")
     
-    - **County-Wide Coverage** - LA County divided into zones for service density measurement
-    - **Temporal Analysis** - Historical facility data tracked over 10-year period
-    - **Gap Calculation** - Comparing homeless growth vs shelter capacity expansion
-    - **Predictive Modeling** - Linear projection to forecast 2027 needs
-    """)
-
-st.divider()
-
-# Service directory
-st.markdown(f"### 📋 Service Directory")
-st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities matching your filters")
-
-for idx, row in filtered_df.head(20).iterrows():
-    with st.expander(f"📍 {row['name']} - {row.get('city', 'LA County')}"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**Type:** {row['type_label']}")
-            st.markdown(f"**Address:** {row['address']}")
-        with col2:
-            st.markdown(f"**City:** {row.get('city', 'N/A')}")
-            if row.get('description'):
-                st.markdown(f"**Services:** {row['description']}")
-
-if len(filtered_df) > 20:
-    st.info(f"📌 Showing first 20 of {len(filtered_df)} results. Use filters above to narrow your search.")
+    with st.container(border=True):
+        st.markdown("### 🏗️ AI Damage Assessment")
+        st.markdown("""
+        Machine learning model for automated building damage detection 
+        from satellite and aerial imagery.
+        
+        **Skills:** Computer vision, AI/ML, disaster response, image classification
+        """)
+        st.markdown("*Coming Soon*")
 
 st.divider()
 
 st.markdown("""
-### 💡 Key Takeaways
+### 💡 About Me
 
-This analysis reveals **LA County's homeless crisis is growing faster than our ability to provide services.** 
-While we've made progress adding facilities, the gap between need and capacity continues to widen.
+I'm a Solutions Engineer with a passion for using GIS and AI to solve real-world problems. 
+My experience includes working with insurance companies on disaster response, modernizing 
+national land information systems, and building geospatial workflows that help people make 
+better decisions faster.
 
-**What this means:**
-- More people competing for fewer resources
-- Longer wait times for shelter beds
-- Increased strain on existing facilities
-- Growing service gap areas where no help is available nearby
-
-**What we need:**
-- Strategic placement of new facilities in underserved areas
-- Increased capacity at existing locations
-- Coordinated regional approach across all LA County cities
+**Want to connect?** Reach out on [LinkedIn](https://linkedin.com/in/luba-hristova) or 
+check out the code on [GitHub](https://github.com/hristova022/gis-portfolio).
 """)
