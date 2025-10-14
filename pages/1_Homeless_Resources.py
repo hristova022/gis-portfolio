@@ -70,44 +70,40 @@ if has_temporal:
     with col2:
         st.markdown("### 📊 The Growing Gap: 2015-2025")
         
-        # Create dual-axis chart
+        # Normalize both metrics to show growth trend
+        df_trends_norm = df_trends.copy()
+        df_trends_norm['homeless_index'] = (df_trends_norm['homeless_count'] / df_trends_norm['homeless_count'].iloc[0]) * 100
+        df_trends_norm['beds_index'] = (df_trends_norm['total_beds'] / df_trends_norm['total_beds'].iloc[0]) * 100
+        
         fig = go.Figure()
         
         fig.add_trace(go.Scatter(
-            x=df_trends['year'],
-            y=df_trends['homeless_count'],
+            x=df_trends_norm['year'],
+            y=df_trends_norm['homeless_index'],
             name='Homeless Population',
             line=dict(color='red', width=3),
             mode='lines+markers'
         ))
         
         fig.add_trace(go.Scatter(
-            x=df_trends['year'],
-            y=df_trends['total_beds'],
-            name='Shelter Capacity (Beds)',
+            x=df_trends_norm['year'],
+            y=df_trends_norm['beds_index'],
+            name='Shelter Capacity',
             line=dict(color='green', width=3),
-            mode='lines+markers',
-            yaxis='y2'
+            mode='lines+markers'
         ))
         
         fig.update_layout(
-            yaxis=dict(
-                title='Homeless Population',
-                titlefont=dict(color='red'),
-                side='left'
-            ),
-            yaxis2=dict(
-                title='Shelter Beds',
-                titlefont=dict(color='green'),
-                overlaying='y',
-                side='right'
-            ),
+            yaxis_title='Growth Index (2015 = 100)',
+            xaxis_title='Year',
             hovermode='x unified',
             height=300,
             margin=dict(l=0, r=0, t=20, b=0),
-            showlegend=True,
-            legend=dict(x=0, y=1)
+            showlegend=True
         )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("📈 Both metrics indexed to 2015 baseline (100) to show relative growth")
         
         st.plotly_chart(fig, use_container_width=True)
     
