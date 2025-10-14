@@ -91,11 +91,22 @@ if has_temporal:
         ))
         
         fig.update_layout(
-            yaxis=dict(title='Homeless Population', titlefont=dict(color='red')),
-            yaxis2=dict(title='Shelter Beds', overlaying='y', side='right', titlefont=dict(color='green')),
+            yaxis=dict(
+                title='Homeless Population',
+                titlefont=dict(color='red'),
+                side='left'
+            ),
+            yaxis2=dict(
+                title='Shelter Beds',
+                titlefont=dict(color='green'),
+                overlaying='y',
+                side='right'
+            ),
             hovermode='x unified',
             height=300,
-            margin=dict(l=0, r=0, t=20, b=0)
+            margin=dict(l=0, r=0, t=20, b=0),
+            showlegend=True,
+            legend=dict(x=0, y=1)
         )
         
         st.plotly_chart(fig, use_container_width=True)
