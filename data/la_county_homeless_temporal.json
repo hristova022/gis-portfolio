@@ -7,8 +7,7 @@
       "lon": -118.1937,
       "address": "1301 W 12th St",
       "city": "Long Beach",
-      "description": "Comprehensive services",
-      "year": 2025
+      "description": "Comprehensive services"
     },
     {
       "name": "Long Beach Rescue Mission",
@@ -17,8 +16,7 @@
       "lon": -118.1889,
       "address": "1335 Pacific Ave",
       "city": "Long Beach",
-      "description": "Emergency shelter",
-      "year": 2025
+      "description": "Emergency shelter"
     },
     {
       "name": "PATH Long Beach",
@@ -27,8 +25,7 @@
       "lon": -118.1683,
       "address": "1200 E Wardlow Rd",
       "city": "Long Beach",
-      "description": "Housing support",
-      "year": 2025
+      "description": "Housing support"
     },
     {
       "name": "Long Beach Community Table",
@@ -37,8 +34,7 @@
       "lon": -118.1895,
       "address": "1528 W 7th St",
       "city": "Long Beach",
-      "description": "Free meals",
-      "year": 2025
+      "description": "Free meals"
     },
     {
       "name": "Rainbow Services Food Bank",
@@ -47,8 +43,7 @@
       "lon": -118.1512,
       "address": "2291 Chestnut Ave",
       "city": "Long Beach",
-      "description": "Food assistance",
-      "year": 2025
+      "description": "Food assistance"
     },
     {
       "name": "Union Rescue Mission",
@@ -57,8 +52,7 @@
       "lon": -118.2437,
       "address": "545 S San Pedro St",
       "city": "Los Angeles",
-      "description": "Largest shelter",
-      "year": 2025
+      "description": "Largest shelter"
     },
     {
       "name": "The Midnight Mission",
@@ -67,8 +61,7 @@
       "lon": -118.2419,
       "address": "601 S San Pedro St",
       "city": "Los Angeles",
-      "description": "24/7 shelter",
-      "year": 2025
+      "description": "24/7 shelter"
     },
     {
       "name": "Los Angeles Mission",
@@ -77,8 +70,7 @@
       "lon": -118.2393,
       "address": "303 E 5th St",
       "city": "Los Angeles",
-      "description": "Meals and shelter",
-      "year": 2025
+      "description": "Meals and shelter"
     },
     {
       "name": "PATH Skid Row",
@@ -87,8 +79,7 @@
       "lon": -118.2467,
       "address": "340 S Main St",
       "city": "Los Angeles",
-      "description": "Rapid rehousing",
-      "year": 2025
+      "description": "Rapid rehousing"
     },
     {
       "name": "Weingart Center",
@@ -97,8 +88,7 @@
       "lon": -118.2447,
       "address": "566 S San Pedro St",
       "city": "Los Angeles",
-      "description": "Homeless services",
-      "year": 2025
+      "description": "Homeless services"
     },
     {
       "name": "LA Downtown Food Bank",
@@ -107,8 +97,7 @@
       "lon": -118.2385,
       "address": "419 E 5th St",
       "city": "Los Angeles",
-      "description": "Daily meals",
-      "year": 2025
+      "description": "Daily meals"
     },
     {
       "name": "LA Regional Food Bank",
@@ -117,8 +106,7 @@
       "lon": -118.2205,
       "address": "1734 E 41st St",
       "city": "Los Angeles",
-      "description": "Major food distribution",
-      "year": 2025
+      "description": "Major food distribution"
     },
     {
       "name": "Hollywood Food Coalition",
@@ -127,8 +115,7 @@
       "lon": -118.3267,
       "address": "1625 N Schrader Blvd",
       "city": "Los Angeles",
-      "description": "Hot meals daily",
-      "year": 2025
+      "description": "Hot meals daily"
     },
     {
       "name": "LA Family Housing",
@@ -137,8 +124,7 @@
       "lon": -118.3871,
       "address": "7843 Lankershim Blvd",
       "city": "Los Angeles",
-      "description": "Family shelter",
-      "year": 2025
+      "description": "Family shelter"
     },
     {
       "name": "Union Station Homeless Services",
@@ -147,8 +133,7 @@
       "lon": -118.1445,
       "address": "412 S Raymond Ave",
       "city": "Pasadena",
-      "description": "Family shelter",
-      "year": 2025
+      "description": "Family shelter"
     },
     {
       "name": "Pasadena Food Bank",
@@ -157,8 +142,7 @@
       "lon": -118.1382,
       "address": "350 S Lake Ave",
       "city": "Pasadena",
-      "description": "Food pantry",
-      "year": 2025
+      "description": "Food pantry"
     },
     {
       "name": "OPCC Homeless Services",
@@ -167,8 +151,7 @@
       "lon": -118.4912,
       "address": "1837 Lincoln Blvd",
       "city": "Santa Monica",
-      "description": "Support services",
-      "year": 2025
+      "description": "Support services"
     },
     {
       "name": "Westside Food Bank",
@@ -177,8 +160,7 @@
       "lon": -118.4759,
       "address": "1710 22nd St",
       "city": "Santa Monica",
-      "description": "Food distribution",
-      "year": 2025
+      "description": "Food distribution"
     },
     {
       "name": "Watts Food Bank",
@@ -187,8 +169,7 @@
       "lon": -118.2418,
       "address": "10950 S Central Ave",
       "city": "Los Angeles",
-      "description": "Food bank",
-      "year": 2025
+      "description": "Food bank"
     },
     {
       "name": "Compton Food Bank",
@@ -197,8 +178,7 @@
       "lon": -118.2201,
       "address": "401 W Compton Blvd",
       "city": "Compton",
-      "description": "Food assistance",
-      "year": 2025
+      "description": "Food assistance"
     }
   ],
   "historical_facilities": [
@@ -300,26 +280,6 @@
       "address": "303 E 5th St",
       "city": "Los Angeles",
       "description": "Meals and shelter",
-      "year": 2015
-    },
-    {
-      "name": "Union Rescue Mission",
-      "type": "shelter",
-      "lat": 34.0443,
-      "lon": -118.2437,
-      "address": "545 S San Pedro St",
-      "city": "Los Angeles",
-      "description": "Largest shelter",
-      "year": 2015
-    },
-    {
-      "name": "LA Regional Food Bank",
-      "type": "food_bank",
-      "lat": 34.0219,
-      "lon": -118.2205,
-      "address": "1734 E 41st St",
-      "city": "Los Angeles",
-      "description": "Major food distribution",
       "year": 2015
     },
     {
@@ -3722,7 +3682,7 @@
   "summary": {
     "total_current_services": 20,
     "total_facilities_2015": 155,
-    "new_facilities_since_2015": 104,
+    "new_facilities_since_2015": 10,
     "current_homeless_count": 78000,
     "current_shelter_capacity": 25500,
     "service_gap_areas": 262
