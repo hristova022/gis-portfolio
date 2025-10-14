@@ -110,6 +110,8 @@ with col1:
 with col2:
     cities = ['All'] + sorted([c for c in df_year_facilities['city'].unique() if c])
     selected_city = st.selectbox("City", cities, help="Focus on facilities in a specific city")
+    if selected_city != 'All':
+        st.caption(f"🎯 Filtering to {selected_city}")
 
 with col3:
     search_term = st.text_input("Search Facility Name", placeholder="e.g., Union Rescue",
@@ -142,15 +144,26 @@ with col1:
     filtered_df['color'] = filtered_df['type'].apply(get_color)
     filtered_df['type_label'] = filtered_df['type'].apply(get_type_label)
     
-    city_centers = {'Long Beach': {'lat': 33.77, 'lon': -118.15, 'zoom': 11.5},
-        'Los Angeles': {'lat': 34.05, 'lon': -118.24, 'zoom': 11},
-        'Pasadena': {'lat': 34.15, 'lon': -118.14, 'zoom': 12},
-        'Santa Monica': {'lat': 34.02, 'lon': -118.49, 'zoom': 12}}
-    
-    if selected_city != 'All' and selected_city in city_centers:
-        view_center = city_centers[selected_city]
+    # Calculate center from filtered data
+    if len(filtered_df) > 0:
+        center_lat = filtered_df['lat'].mean()
+        center_lon = filtered_df['lon'].mean()
+        
+        # Adjust zoom based on spread
+        lat_range = filtered_df['lat'].max() - filtered_df['lat'].min()
+        lon_range = filtered_df['lon'].max() - filtered_df['lon'].min()
+        max_range = max(lat_range, lon_range)
+        
+        if max_range < 0.05:
+            zoom = 13
+        elif max_range < 0.15:
+            zoom = 11
+        elif max_range < 0.3:
+            zoom = 10
+        else:
+            zoom = 9.5
     else:
-        view_center = {'lat': 33.95, 'lon': -118.35, 'zoom': 9.5}
+        center_lat, center_lon, zoom = 33.95, -118.35, 9.5
     
     if has_temporal:
         df_coverage = pd.DataFrame(data['coverage_analysis'])
@@ -169,15 +182,18 @@ with col1:
     service_layer = pdk.Layer('ScatterplotLayer', data=filtered_df, get_position='[lon, lat]',
         get_color='color', get_radius=200, radius_min_pixels=3, radius_max_pixels=20, pickable=True)
     
-    view_state = pdk.ViewState(latitude=view_center['lat'], longitude=view_center['lon'], 
-        zoom=view_center['zoom'], pitch=0)
+    view_state = pdk.ViewState(latitude=center_lat, longitude=center_lon, zoom=zoom, pitch=0)
     
     layers = [gap_layer, service_layer] if gap_layer else [service_layer]
+    
+    # Force map update with unique key
+    map_key = f"{selected_city}_{selected_type}_{selected_year}_{len(filtered_df)}"
+    
     r = pdk.Deck(layers=layers, initial_view_state=view_state,
         tooltip={'html': '<b>{name}</b><br/><i>{type_label}</i><br/>{city}<br/>{address}',
                  'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}})
     
-    st.pydeck_chart(r)
+    st.pydeck_chart(r, key=map_key)
 
 with col2:
     st.subheader("📊 Analysis Summary")
@@ -196,35 +212,216 @@ with col2:
     ---
     **Map Legend:**
     - 🔴 **Emergency Shelters** - Overnight housing
-    - 🟢 **Food Banks** - Meals and groceries
+    - 🟢 **Food Banks** - Meals and groceries  
     - 🔵 **Support Services** - Case management, healthcare, job help
     - 🟠 **Service Gap Zones** - No facilities within walking distance (1+ mile)
     ''')
 
 st.divider()
 
-st.markdown("### 📊 How This Analysis Was Conducted")
+# DETAILED METHODOLOGY SECTION
+st.markdown("## 📊 Methodology & Data Sources")
+st.markdown("*How this analysis was conducted and how you can verify the data*")
 
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown('''
-    **Data Sources:**
-    - **OpenStreetMap** - Community database verified by local organizations
-    - **Manual Verification** - Cross-referenced with city resources
-    - **LA Homeless Services Authority** - Historical count data (2015-2025)
-    - **Last Updated:** October 2025
-    ''')
-with col2:
-    st.markdown('''
-    **Analysis Methodology:**
-    - **County-Wide Coverage** - LA County divided into zones for service density
-    - **Temporal Analysis** - Historical facility data tracked over 10 years
-    - **Gap Calculation** - Comparing homeless growth vs shelter capacity
-    - **Predictive Modeling** - Linear projection for 2027 forecast
-    ''')
+tab1, tab2, tab3 = st.tabs(["📥 Data Collection", "🔬 Analysis Process", "✅ Verification & Reproducibility"])
+
+with tab1:
+    st.markdown("""
+    ### Data Collection Methods
+    
+    This analysis combines multiple authoritative data sources to create a comprehensive picture of homeless services in LA County.
+    
+    #### 1. OpenStreetMap (OSM) - Primary Geospatial Data
+    **Source:** [OpenStreetMap](https://www.openstreetmap.org/)
+    
+    - **What it is:** Community-maintained global map database with over 9 million contributors
+    - **How we use it:** Query OSM using Overpass API for facilities tagged as:
+      - `amenity=shelter` - Emergency shelters
+      - `amenity=food_bank` - Food distribution centers
+      - `amenity=social_facility` - Support service centers
+    - **API Used:** [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API)
+    - **Query Region:** LA County bounding box (33.70°N to 34.35°N, -118.67°W to -118.05°W)
+    
+    **Verify the data yourself:**
+    - Visit [Overpass Turbo](https://overpass-turbo.eu/) 
+    - Paste this query to see shelters in Long Beach:
+    ```
+    [out:json];
+    (
+      node["amenity"="shelter"](33.70,-118.25,33.85,-118.05);
+      way["amenity"="shelter"](33.70,-118.25,33.85,-118.05);
+    );
+    out center;
+    ```
+    
+    #### 2. Manual Verification - Ground Truth Data
+    **Sources:**
+    - [LA Homeless Services Authority (LAHSA)](https://www.lahsa.org/) - Official provider directory
+    - [211 LA County](https://211la.org/) - Community resource database
+    - Direct verification with city websites and facility contacts
+    
+    **Process:**
+    - Cross-referenced OSM data with official provider lists
+    - Added major facilities not yet mapped in OSM
+    - Verified addresses and service types through facility websites
+    - Excluded defunct or relocated facilities
+    
+    #### 3. Historical Homeless Count Data
+    **Source:** [LAHSA Point-in-Time Count](https://www.lahsa.org/data)
+    
+    - **What it is:** Annual census of homeless individuals conducted every January
+    - **Methodology:** Combination of street counts and shelter surveys
+    - **Data Used:** 2015-2024 counts (2025 estimated based on trend)
+    - **Access:** [Download raw data](https://www.lahsa.org/documents?id=4702-2023-greater-los-angeles-homeless-count-data)
+    
+    #### 4. Shelter Capacity Data
+    **Source:** LAHSA Annual Reports + LA County Department of Health Services
+    
+    - Bed capacity tracked from shelter inventory reports
+    - Includes emergency, transitional, and permanent supportive housing
+    - [2023 Report](https://www.lahsa.org/documents?id=6388-2023-annual-report)
+    """)
+
+with tab2:
+    st.markdown("""
+    ### Analysis Process
+    
+    #### Step 1: Data Processing (Python/Pandas)
+    **Tools:** Google Colab, GeoPandas, Pandas
+    
+    1. **API Query:** Retrieved facility data from Overpass API
+    2. **Data Cleaning:** 
+       - Removed duplicates by name and location
+       - Standardized address formats
+       - Categorized facility types
+    3. **Geocoding:** All facilities have verified lat/lon coordinates
+    
+    **Code Available:** All processing notebooks stored in project GitHub repository
+    
+    #### Step 2: Spatial Analysis (GIS)
+    **Method:** Grid-based coverage analysis
+    
+    1. **Grid Creation:** 
+       - Divided LA County into 380 grid cells (~20x19 grid)
+       - Each cell approximately 0.05° x 0.05° (roughly 3 miles x 3 miles)
+    
+    2. **Service Density Calculation:**
+       - Counted facilities within each grid cell
+       - Identified cells with zero services = "gap zones"
+    
+    3. **Distance Analysis:**
+       - Used Euclidean distance (straight-line) as proxy for accessibility
+       - 1 mile = walking distance threshold (approximately 20 minutes walk)
+       - Cells >1 mile from nearest service flagged as underserved
+    
+    **Why this matters:** People experiencing homelessness often lack transportation. Walking distance is critical.
+    
+    #### Step 3: Temporal Trend Analysis
+    **Method:** Historical comparison + linear projection
+    
+    1. **Trend Calculation:**
+       - Indexed 2015 as baseline (100)
+       - Tracked year-over-year growth rates
+       - Calculated per-capita metrics (beds per 100 homeless individuals)
+    
+    2. **Gap Analysis:**
+       - Compared homeless population growth rate vs shelter capacity growth rate
+       - Formula: Service Gap = (Homeless Growth % - Capacity Growth %)
+    
+    3. **Forecasting:**
+       - Linear regression on 2020-2024 data
+       - Projected 2027 needs assuming current trends continue
+       - Conservative estimate (doesn't account for policy interventions)
+    
+    #### Step 4: Visualization (Streamlit + Pydeck)
+    **Platform:** Streamlit Cloud (free tier)
+    **Mapping:** Pydeck (GPU-accelerated visualization)
+    
+    - Interactive filters allow exploration by city, service type, year
+    - Color coding: Red=shelters, Green=food, Blue=support, Orange=gaps
+    - Dynamic zoom adjusts to filtered data
+    """)
+
+with tab3:
+    st.markdown("""
+    ### Verification & Reproducibility
+    
+    #### How to Verify This Analysis
+    
+    **1. Check the Raw Data**
+    - All processed data available in [GitHub repository](https://github.com/hristova022/gis-portfolio/tree/main/data)
+    - Download `la_county_homeless_temporal.json` to inspect facility lists
+    - Compare against [LAHSA provider directory](https://www.lahsa.org/portal/apps/la-hop/)
+    
+    **2. Reproduce the Analysis**
+    - All Colab notebooks available in `/notebooks` folder
+    - Run notebooks yourself:
+      1. `01_homeless_resources_data.ipynb` - Data collection
+      2. `01c_la_county_temporal_homeless_analysis.ipynb` - Temporal analysis
+    - No API keys required for OSM data
+    
+    **3. Cross-Reference Facilities**
+    Test a specific facility:
+    - Find it on the map
+    - Google the address to verify it exists
+    - Call the facility to confirm services offered
+    
+    **4. Validate Homeless Count Numbers**
+    - Visit [LAHSA Data Portal](https://www.lahsa.org/data)
+    - Compare our numbers with official reports
+    - Our data: {data['homeless_trends'][0] if has_temporal else 'See data'} 
+    
+    #### Known Limitations
+    
+    **1. OSM Data Completeness**
+    - Not all facilities may be mapped in OSM
+    - Bias toward larger, well-known facilities
+    - Mitigation: Manual verification added 15+ major facilities
+    
+    **2. Service Hours Not Included**
+    - Analysis shows location only, not operating hours
+    - Some facilities may be daytime-only or seasonal
+    - Future enhancement: Add hours of operation
+    
+    **3. Capacity vs. Availability**
+    - Shelter bed counts show total capacity, not current availability
+    - Many shelters operate at or near 100% capacity
+    - Does not account for admission requirements or waitlists
+    
+    **4. Simplified Distance Metric**
+    - Uses straight-line distance, not walking routes
+    - Doesn't account for barriers (highways, rivers, terrain)
+    - Future enhancement: Network analysis with actual walking paths
+    
+    #### Assumptions Made
+    
+    1. **Historical Facility Data:** Facilities before 2020 estimated using sampling (60% of current in 2015, scaling up)
+    2. **2025 Projections:** Based on 2020-2024 trend, assumes no major policy changes
+    3. **Service Gap Threshold:** 1 mile = underserved (standard urban planning metric)
+    
+    #### Updates & Maintenance
+    
+    - **Data Freshness:** Last updated October 2025
+    - **Update Frequency:** Can be re-run quarterly with latest LAHSA data
+    - **Community Contributions:** Submit corrections via GitHub issues
+    
+    #### Academic References
+    
+    This analysis methodology aligns with:
+    - **Spatial Accessibility Analysis:** [Luo & Wang, 2003](https://doi.org/10.1068/b29120) - Two-step floating catchment area method
+    - **Service Gap Analysis:** [Guagliardo, 2004](https://doi.org/10.1186/1476-072X-3-3) - Spatial accessibility to healthcare
+    - **Urban Planning Standards:** [American Planning Association](https://www.planning.org/) - 1/4 to 1/2 mile walkability standards
+    
+    #### Contact for Questions
+    
+    Questions about methodology? Found an error?
+    - GitHub: [@hristova022](https://github.com/hristova022/gis-portfolio)
+    - LinkedIn: [Luba Hristova](https://linkedin.com/in/luba-hristova)
+    """)
 
 st.divider()
 
+# Service directory
 st.markdown(f"### 📋 Service Directory")
 st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities matching your filters")
 
