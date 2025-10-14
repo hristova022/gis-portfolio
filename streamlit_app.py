@@ -9,7 +9,6 @@ st.set_page_config(page_title="LA County Homeless Analysis | GIS Portfolio", pag
 
 st.title("🏠 LA County Homeless Services: Are We Keeping Pace?")
 
-# Load data
 @st.cache_data
 def load_data():
     url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/la_county_homeless_temporal.json"
@@ -20,18 +19,14 @@ def load_data():
         return data
     except:
         st.error("Could not load temporal data. Loading basic data instead...")
-        # Fallback to original data
         url_basic = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/homeless_services_data.json"
         response = requests.get(url_basic)
         return response.json()
 
 data = load_data()
-
-# Check if we have temporal data
 has_temporal = 'homeless_trends' in data
 
 if has_temporal:
-    # THE STORY - Big headline at top
     st.markdown(f"""
     ## 📈 The Gap is Widening
     
@@ -48,18 +43,12 @@ if has_temporal:
     
     st.divider()
     
-    # Timeline and trends
     col1, col2 = st.columns([1, 2])
     
     with col1:
         st.markdown("### 📅 View Services By Year")
-        selected_year = st.select_slider(
-            "Select Year",
-            options=[2015, 2018, 2020, 2023, 2025],
-            value=2025
-        )
+        selected_year = st.select_slider("Select Year", options=[2015, 2018, 2020, 2023, 2025], value=2025)
         
-        # Stats for selected year
         df_trends = pd.DataFrame(data['homeless_trends'])
         year_data = df_trends[df_trends['year'] == selected_year].iloc[0] if selected_year in df_trends['year'].values else df_trends.iloc[-1]
         
@@ -70,75 +59,47 @@ if has_temporal:
     with col2:
         st.markdown("### 📊 The Growing Gap: 2015-2025")
         
-        # Create dual-axis chart
+        df_trends_norm = df_trends.copy()
+        df_trends_norm['homeless_index'] = (df_trends_norm['homeless_count'] / df_trends_norm['homeless_count'].iloc[0]) * 100
+        df_trends_norm['beds_index'] = (df_trends_norm['total_beds'] / df_trends_norm['total_beds'].iloc[0]) * 100
+        
         fig = go.Figure()
         
         fig.add_trace(go.Scatter(
-            x=df_trends['year'],
-            y=df_trends['homeless_count'],
-            name='Homeless Population',
-            line=dict(color='red', width=3),
-            mode='lines+markers'
+            x=df_trends_norm['year'], y=df_trends_norm['homeless_index'],
+            name='Homeless Population', line=dict(color='red', width=3), mode='lines+markers'
         ))
         
         fig.add_trace(go.Scatter(
-            x=df_trends['year'],
-            y=df_trends['total_beds'],
-            name='Shelter Capacity (Beds)',
-            line=dict(color='green', width=3),
-            mode='lines+markers',
-            yaxis='y2'
+            x=df_trends_norm['year'], y=df_trends_norm['beds_index'],
+            name='Shelter Capacity', line=dict(color='green', width=3), mode='lines+markers'
         ))
         
         fig.update_layout(
-            yaxis=dict(
-                title='Homeless Population',
-                titlefont=dict(color='red'),
-                side='left'
-            ),
-            yaxis2=dict(
-                title='Shelter Beds',
-                titlefont=dict(color='green'),
-                overlaying='y',
-                side='right'
-            ),
-            hovermode='x unified',
-            height=300,
-            margin=dict(l=0, r=0, t=20, b=0),
-            showlegend=True,
-            legend=dict(x=0, y=1)
+            yaxis_title='Growth Index (2015 = 100)', xaxis_title='Year',
+            hovermode='x unified', height=300, margin=dict(l=0, r=0, t=20, b=0), showlegend=True
         )
         
         st.plotly_chart(fig, use_container_width=True)
+        st.caption("📈 Both metrics indexed to 2015 baseline (100) to show relative growth")
     
     st.divider()
     
-    # Filter by year for facilities
     df_facilities = pd.DataFrame(data['historical_facilities'])
     df_year_facilities = df_facilities[df_facilities['year'] <= selected_year].drop_duplicates(subset=['name'])
-    
 else:
-    # Fallback to basic view
-    st.markdown("""
-    ### Why This Matters
-    
-    When someone experiencing homelessness needs help, **every mile matters**. This analysis identifies 
-    neighborhoods where people may be walking 2+ miles to reach a shelter, meal program, or support services.
-    """)
+    st.markdown("### Why This Matters\n\nWhen someone experiencing homelessness needs help, **every mile matters**.")
     st.divider()
-    
     df_year_facilities = pd.DataFrame(data['services'])
     selected_year = 2025
 
-# Stats row
 col1, col2, col3, col4 = st.columns(4)
 
 if has_temporal:
     with col1:
         st.metric(f"Services in {selected_year}", len(df_year_facilities))
     with col2:
-        shelters = len(df_year_facilities[df_year_facilities['type'] == 'shelter'])
-        st.metric("Emergency Shelters", shelters)
+        st.metric("Emergency Shelters", len(df_year_facilities[df_year_facilities['type'] == 'shelter']))
     with col3:
         st.metric("Current Homeless", f"{data['summary']['current_homeless_count']:,}")
     with col4:
@@ -157,20 +118,41 @@ else:
 
 st.divider()
 
-# Filters
-st.subheader("Filter Services")
+# Filters with explanations
+st.markdown("### 🔍 Filter Services")
+st.caption("Narrow down the facilities shown on the map using the filters below")
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    service_types = ['All'] + sorted(df_year_facilities['type'].unique().tolist())
-    selected_type = st.selectbox("Service Type", service_types)
+    service_types_raw = ['All'] + sorted(df_year_facilities['type'].unique().tolist())
+    service_types_display = {
+        'All': 'All Services',
+        'shelter': 'Emergency Shelters',
+        'food_bank': 'Food Banks & Meal Programs',
+        'social_facility': 'Support Services & Programs'
+    }
+    selected_type_display = st.selectbox(
+        "Service Type", 
+        [service_types_display.get(t, t) for t in service_types_raw],
+        help="Filter by the type of service provided"
+    )
+    selected_type = [k for k, v in service_types_display.items() if v == selected_type_display][0]
 
 with col2:
     cities = ['All'] + sorted([c for c in df_year_facilities['city'].unique() if c])
-    selected_city = st.selectbox("City", cities)
+    selected_city = st.selectbox(
+        "City", 
+        cities,
+        help="Focus on facilities in a specific city"
+    )
 
 with col3:
-    search_term = st.text_input("Search by name")
+    search_term = st.text_input(
+        "Search Facility Name", 
+        placeholder="e.g., Union Rescue",
+        help="Search for a specific facility by name"
+    )
 
 # Apply filters
 filtered_df = df_year_facilities.copy()
@@ -183,74 +165,81 @@ if search_term:
 
 st.divider()
 
-# Map
+# Map section
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader(f"Service Locations Map - {selected_year}")
+    st.subheader(f"📍 Service Locations Map - {selected_year}")
+    st.caption("Zoom and pan to explore. Hover over markers for facility details.")
     
-    # Color mapping
     def get_color(service_type):
-        colors = {
-            'shelter': [255, 0, 0, 200],
-            'food_bank': [0, 200, 0, 200],
-            'social_facility': [0, 100, 255, 200]
-        }
+        colors = {'shelter': [255, 0, 0, 200], 'food_bank': [0, 200, 0, 200], 'social_facility': [0, 100, 255, 200]}
         return colors.get(service_type, [128, 128, 128, 200])
     
     def get_type_label(service_type):
-        labels = {
-            'shelter': 'Emergency Shelter',
-            'food_bank': 'Food Bank / Meal Program',
-            'social_facility': 'Support Services'
-        }
+        labels = {'shelter': 'Emergency Shelter', 'food_bank': 'Food Bank / Meal Program', 'social_facility': 'Support Services'}
         return labels.get(service_type, service_type)
     
     filtered_df['color'] = filtered_df['type'].apply(get_color)
     filtered_df['type_label'] = filtered_df['type'].apply(get_type_label)
     
-    # Service gaps
+    # Dynamic zoom based on city selection
+    city_centers = {
+        'Long Beach': {'lat': 33.77, 'lon': -118.15, 'zoom': 11.5},
+        'Los Angeles': {'lat': 34.05, 'lon': -118.24, 'zoom': 11},
+        'Pasadena': {'lat': 34.15, 'lon': -118.14, 'zoom': 12},
+        'Santa Monica': {'lat': 34.02, 'lon': -118.49, 'zoom': 12},
+    }
+    
+    if selected_city in city_centers:
+        view_center = city_centers[selected_city]
+    else:
+        view_center = {'lat': 33.95, 'lon': -118.35, 'zoom': 9.5}
+    
+    # Service gaps with zoom-responsive sizing
     if has_temporal:
         df_coverage = pd.DataFrame(data['coverage_analysis'])
         gap_areas = df_coverage[df_coverage['service_count'] == 0].copy()
-        gap_areas['radius'] = 1500
         gap_areas['color'] = [[255, 165, 0, 30]] * len(gap_areas)
-        gap_areas['name'] = ['Service Gap Area'] * len(gap_areas)
-        gap_areas['type_label'] = ['No nearby services - 1+ mile to nearest resource'] * len(gap_areas)
+        gap_areas['name'] = ['Service Gap Zone'] * len(gap_areas)
+        gap_areas['type_label'] = ['Area with no services within 1+ mile'] * len(gap_areas)
+        gap_areas['address'] = [''] * len(gap_areas)
+        gap_areas['city'] = [''] * len(gap_areas)
         
         gap_layer = pdk.Layer(
-            'ScatterplotLayer',
-            data=gap_areas,
+            'ScatterplotLayer', 
+            data=gap_areas, 
             get_position='[lon, lat]',
-            get_color='color',
-            get_radius='radius',
-            pickable=True,
+            get_color='color', 
+            get_radius=1500,
+            radius_min_pixels=5,
+            radius_max_pixels=50,
+            pickable=True
         )
     else:
         gap_layer = None
     
-    # Create service layer
     service_layer = pdk.Layer(
-        'ScatterplotLayer',
-        data=filtered_df,
+        'ScatterplotLayer', 
+        data=filtered_df, 
         get_position='[lon, lat]',
-        get_color='color',
+        get_color='color', 
         get_radius=200,
-        pickable=True,
+        radius_min_pixels=3,
+        radius_max_pixels=20,
+        pickable=True
     )
     
-    # Set view - LA County wide
     view_state = pdk.ViewState(
-        latitude=33.95,
-        longitude=-118.35,
-        zoom=9.5,
-        pitch=0,
+        latitude=view_center['lat'], 
+        longitude=view_center['lon'], 
+        zoom=view_center['zoom'], 
+        pitch=0
     )
     
-    # Render map
     layers = [gap_layer, service_layer] if gap_layer else [service_layer]
     r = pdk.Deck(
-        layers=layers,
+        layers=layers, 
         initial_view_state=view_state,
         tooltip={
             'html': '<b>{name}</b><br/><i>{type_label}</i><br/>{city}<br/>{address}',
@@ -261,32 +250,30 @@ with col1:
     st.pydeck_chart(r)
 
 with col2:
-    st.subheader("Geographic Distribution")
+    st.subheader("📊 Analysis Summary")
+    
+    # Show filtered results count
+    st.metric("Facilities Shown", len(filtered_df))
     
     if has_temporal:
-        area_counts = df_coverage.groupby('area')['service_count'].sum().sort_values(ascending=False)
-        
-        fig_pie = px.pie(
-            values=area_counts.values,
-            names=area_counts.index,
-            title='Services by Region'
-        )
-        fig_pie.update_layout(height=250, margin=dict(l=0, r=0, t=30, b=0))
-        st.plotly_chart(fig_pie, use_container_width=True)
+        # Service type breakdown for filtered results
+        st.markdown("**Services by Type:**")
+        type_counts = filtered_df['type'].value_counts()
+        for service_type, count in type_counts.items():
+            type_label = get_type_label(service_type)
+            st.markdown(f"• {type_label}: {count}")
         
         st.markdown("---")
         st.markdown(f"**Service Gap Areas:** {data['summary']['service_gap_areas']}")
-        st.markdown(f"**Total Population Analyzed:** {data['summary']['total_population_analyzed']:,}")
+        st.caption("Orange zones on map show areas lacking nearby services")
     
     st.markdown("""
     ---
     **Map Legend:**
-    - 🔴 Emergency shelters  
-    - 🟢 Food banks & meals  
-    - 🔵 Support services  
-    - 🟠 Service gap zones
-    
-    *Hover for details*
+    - 🔴 **Emergency Shelters** - Overnight housing
+    - 🟢 **Food Banks** - Meals and groceries
+    - 🔵 **Support Services** - Case management, healthcare, job help
+    - 🟠 **Service Gap Zones** - No facilities within walking distance (1+ mile)
     """)
 
 st.divider()
@@ -300,15 +287,9 @@ with col1:
     st.markdown("""
     **Data Sources:**
     
-    - **OpenStreetMap** - Community-contributed global database of homeless service locations, 
-    verified by local organizations and volunteers across LA County
-    
-    - **Manual Verification** - Cross-referenced with city resources and direct 
-    outreach to service providers to ensure accuracy
-    
-    - **LA Homeless Services Authority (LAHSA)** - Historical homeless count data from 
-    annual point-in-time surveys (2015-2025)
-    
+    - **OpenStreetMap** - Community-contributed database verified by local organizations across LA County
+    - **Manual Verification** - Cross-referenced with city resources and service providers
+    - **LA Homeless Services Authority** - Historical homeless count data (2015-2025)
     - **Last Updated:** October 2025
     """)
 
@@ -316,23 +297,17 @@ with col2:
     st.markdown("""
     **Analysis Methodology:**
     
-    - **County-Wide Coverage** - LA County divided into geographic zones to measure 
-    service density across all communities
-    
-    - **Temporal Analysis** - Historical facility data tracked to show service expansion 
-    over 10-year period (2015-2025)
-    
-    - **Gap Calculation** - Comparing homeless population growth rate against shelter 
-    capacity expansion to measure if we're keeping pace
-    
-    - **Predictive Modeling** - Linear projection used to forecast 2027 needs based 
-    on recent trends
+    - **County-Wide Coverage** - LA County divided into zones for service density measurement
+    - **Temporal Analysis** - Historical facility data tracked over 10-year period
+    - **Gap Calculation** - Comparing homeless growth vs shelter capacity expansion
+    - **Predictive Modeling** - Linear projection to forecast 2027 needs
     """)
 
 st.divider()
 
 # Service directory
-st.subheader(f"Service Directory ({len(filtered_df)} locations)")
+st.markdown(f"### 📋 Service Directory")
+st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities matching your filters")
 
 for idx, row in filtered_df.head(20).iterrows():
     with st.expander(f"📍 {row['name']} - {row.get('city', 'LA County')}"):
@@ -346,15 +321,15 @@ for idx, row in filtered_df.head(20).iterrows():
                 st.markdown(f"**Services:** {row['description']}")
 
 if len(filtered_df) > 20:
-    st.info(f"Showing first 20 of {len(filtered_df)} results. Use filters to narrow search.")
+    st.info(f"📌 Showing first 20 of {len(filtered_df)} results. Use filters above to narrow your search.")
 
 st.divider()
 
 st.markdown("""
 ### 💡 Key Takeaways
 
-This analysis reveals a critical challenge: **LA County's homeless crisis is growing faster than our ability to provide services.** 
-While we've made progress adding new facilities, the gap between need and capacity continues to widen.
+This analysis reveals **LA County's homeless crisis is growing faster than our ability to provide services.** 
+While we've made progress adding facilities, the gap between need and capacity continues to widen.
 
 **What this means:**
 - More people competing for fewer resources
