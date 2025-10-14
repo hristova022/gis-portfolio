@@ -191,7 +191,8 @@ with col2:
         st.plotly_chart(fig_pie, use_container_width=True)
         st.markdown("---")
         st.markdown(f"**Service Gap Areas:** {data['summary']['service_gap_areas']}")
-        st.markdown(f"**Total Population:** {data['summary']['total_population_analyzed']:,}")
+        if 'total_population_analyzed' in data['summary']:
+            st.markdown(f"**Total Population:** {data['summary']['total_population_analyzed']:,}")
     
     st.markdown("""
     ---
