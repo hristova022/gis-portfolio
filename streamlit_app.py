@@ -247,7 +247,8 @@ with col1:
         }
     )
     
-    st.pydeck_chart(r)
+    # Use key to force map update when city changes
+    st.pydeck_chart(r, key=f"map_{selected_city}_{selected_year}")
 
 with col2:
     st.subheader("📊 Analysis Summary")
