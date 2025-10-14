@@ -73,8 +73,12 @@ if has_temporal:
     
     st.divider()
     
-    df_facilities = pd.DataFrame(data['historical_facilities'])
-    df_year_facilities = df_facilities[df_facilities['year'] <= selected_year].drop_duplicates(subset=['name'])
+    # Load facilities - use current_services for 2025, historical for other years
+    if selected_year == 2025 and 'current_services' in data:
+        df_year_facilities = pd.DataFrame(data['current_services'])
+    else:
+        df_facilities = pd.DataFrame(data['historical_facilities'])
+        df_year_facilities = df_facilities[df_facilities['year'] <= selected_year].drop_duplicates(subset=['name'])
 else:
     df_year_facilities = pd.DataFrame(data['services'])
     selected_year = 2025
