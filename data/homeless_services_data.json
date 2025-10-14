@@ -1,0 +1,338 @@
+{
+  "services": [
+    {
+      "name": "Courtyard Care Center",
+      "type": "social_facility",
+      "lat": 33.7914106,
+      "lon": -118.1652863,
+      "address": "Dawson Avenue",
+      "description": ""
+    },
+    {
+      "name": "Miller Children's Abuse and Violence Intervention Center",
+      "type": "social_facility",
+      "lat": 33.8094582,
+      "lon": -118.1857222,
+      "address": "Atlantic Avenue",
+      "description": ""
+    },
+    {
+      "name": "Unnamed Service",
+      "type": "shelter",
+      "lat": 33.7929287,
+      "lon": -118.1895642,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Filipino Baptist Fellowship of Long Beach",
+      "type": "social_facility",
+      "lat": 33.7963468,
+      "lon": -118.1851488,
+      "address": "Atlantic Avenue",
+      "description": ""
+    },
+    {
+      "name": "First Southern Baptist Church of Long Beach",
+      "type": "social_facility",
+      "lat": 33.8197952,
+      "lon": -118.1209908,
+      "address": "San Anseline Avenue",
+      "description": ""
+    },
+    {
+      "name": "Helping In Services, Inc.",
+      "type": "social_facility",
+      "lat": 33.7867728,
+      "lon": -118.1742547,
+      "address": "Gundry Avenue",
+      "description": ""
+    },
+    {
+      "name": "Long Beach Lutheran Social Services",
+      "type": "social_facility",
+      "lat": 33.7874666,
+      "lon": -118.1925503,
+      "address": "Pine Avenue",
+      "description": ""
+    },
+    {
+      "name": "Villa Redondo",
+      "type": "social_facility",
+      "lat": 33.7655838,
+      "lon": -118.1528691,
+      "address": "Redondo Avenue",
+      "description": ""
+    },
+    {
+      "name": "Country Villa Belmont Heights Healthcare Center",
+      "type": "social_facility",
+      "lat": 33.7883989,
+      "lon": -118.1477559,
+      "address": "Grand Avenue",
+      "description": ""
+    },
+    {
+      "name": "Foodfinders",
+      "type": "social_facility",
+      "lat": 33.8089646,
+      "lon": -118.0666287,
+      "address": "Humbolt Street",
+      "description": ""
+    },
+    {
+      "name": "Regency Palms Senior Living",
+      "type": "social_facility",
+      "lat": 33.7766956,
+      "lon": -118.1919073,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Long Beach Adult Day Health Care Center",
+      "type": "social_facility",
+      "lat": 33.7718871,
+      "lon": -118.1701029,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Bel Vista Nursing Home",
+      "type": "social_facility",
+      "lat": 33.7828924,
+      "lon": -118.1354373,
+      "address": "East Anaheim Street",
+      "description": ""
+    },
+    {
+      "name": "Mahar House",
+      "type": "social_facility",
+      "lat": 33.7857949,
+      "lon": -118.2467528,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Shelter A",
+      "type": "shelter",
+      "lat": 33.815492,
+      "lon": -118.0844774,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Shelter B",
+      "type": "shelter",
+      "lat": 33.8168948,
+      "lon": -118.0851636,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Intercommunity Care Center",
+      "type": "social_facility",
+      "lat": 33.8048294,
+      "lon": -118.1454102,
+      "address": "North Grand Avenue",
+      "description": ""
+    },
+    {
+      "name": "MYCLUB",
+      "type": "social_facility",
+      "lat": 33.7859548,
+      "lon": -118.2468136,
+      "address": "",
+      "description": ""
+    },
+    {
+      "name": "Multi-Service Center",
+      "type": "shelter",
+      "lat": 33.7701,
+      "lon": -118.1937,
+      "address": "1301 W 12th St",
+      "description": "Comprehensive homeless services"
+    },
+    {
+      "name": "Long Beach Rescue Mission",
+      "type": "shelter",
+      "lat": 33.7838,
+      "lon": -118.1889,
+      "address": "1335 Pacific Ave",
+      "description": "Emergency shelter and meals"
+    },
+    {
+      "name": "PATH Long Beach",
+      "type": "social_facility",
+      "lat": 33.7794,
+      "lon": -118.1683,
+      "address": "1200 E Wardlow Rd",
+      "description": "Housing and support services"
+    },
+    {
+      "name": "Long Beach Community Table",
+      "type": "food_bank",
+      "lat": 33.7679,
+      "lon": -118.1895,
+      "address": "1528 W 7th St",
+      "description": "Free meals"
+    }
+  ],
+  "coverage": [
+    {
+      "lat": 33.715,
+      "lon": -118.22999999999999,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.715,
+      "lon": -118.19,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.715,
+      "lon": -118.15,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.715,
+      "lon": -118.11,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.715,
+      "lon": -118.07,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.745,
+      "lon": -118.22999999999999,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.745,
+      "lon": -118.19,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.745,
+      "lon": -118.15,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.745,
+      "lon": -118.11,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.745,
+      "lon": -118.07,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.775,
+      "lon": -118.22999999999999,
+      "service_count": 2,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.775,
+      "lon": -118.19,
+      "service_count": 7,
+      "has_shelter": true
+    },
+    {
+      "lat": 33.775,
+      "lon": -118.15,
+      "service_count": 4,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.775,
+      "lon": -118.11,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.775,
+      "lon": -118.07,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.805,
+      "lon": -118.22999999999999,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.805,
+      "lon": -118.19,
+      "service_count": 3,
+      "has_shelter": true
+    },
+    {
+      "lat": 33.805,
+      "lon": -118.15,
+      "service_count": 2,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.805,
+      "lon": -118.11,
+      "service_count": 1,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.805,
+      "lon": -118.07,
+      "service_count": 3,
+      "has_shelter": true
+    },
+    {
+      "lat": 33.835,
+      "lon": -118.22999999999999,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.835,
+      "lon": -118.19,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.835,
+      "lon": -118.15,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.835,
+      "lon": -118.11,
+      "service_count": 0,
+      "has_shelter": false
+    },
+    {
+      "lat": 33.835,
+      "lon": -118.07,
+      "service_count": 0,
+      "has_shelter": false
+    }
+  ],
+  "stats": {
+    "total_services": 22,
+    "shelters": 5,
+    "food_banks": 1,
+    "support_centers": 16
+  }
+}
