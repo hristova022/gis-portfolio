@@ -177,12 +177,47 @@ if data:
         
         st.markdown("""
         ---
-        **🔴 Red dots:** Shelters  
-        **🟢 Green dots:** Food banks  
-        **🔵 Blue dots:** Support centers  
-        **🟠 Orange circles:** Service gap areas
+        **Map Legend:**
+        - 🔴 Red dots = Emergency shelters  
+        - 🟢 Green dots = Food banks & meal programs  
+        - 🔵 Blue dots = Support services  
+        - 🟠 Orange circles = Service gap zones (1+ mile to nearest resource)
         
-        *Hover over markers for details*
+        *Hover over any marker for details*
+        """)
+    
+    st.divider()
+    
+    # Methodology section - prominent under map
+    st.markdown("### 📊 How This Analysis Was Conducted")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **Data Sources:**
+        
+        - **OpenStreetMap** - Community-contributed global database of homeless service locations, 
+        verified by local organizations and volunteers
+        
+        - **Manual Verification** - Cross-referenced with Long Beach city resources and direct 
+        outreach to service providers to ensure accuracy
+        
+        - **Last Updated:** October 2025
+        """)
+    
+    with col2:
+        st.markdown("""
+        **Analysis Methodology:**
+        
+        - **Grid-Based Coverage Analysis** - Long Beach divided into geographic zones to measure 
+        service density in each neighborhood
+        
+        - **Walking Distance Calculations** - Service gaps identified using pedestrian distances 
+        (not driving), recognizing many individuals experiencing homelessness lack transportation
+        
+        - **Gap Identification** - Areas where residents must travel 1+ miles to reach any service 
+        are flagged as underserved
         """)
     
     st.divider()
@@ -194,12 +229,12 @@ if data:
         with st.expander(f"📍 {row['name']}"):
             col1, col2 = st.columns(2)
             with col1:
-                st.markdown(f"**Type:** {row['type'].replace('_', ' ').title()}")
+                st.markdown(f"**Type:** {row['type_label']}")
                 st.markdown(f"**Address:** {row['address']}")
             with col2:
                 st.markdown(f"**Coordinates:** {row['lat']:.4f}, {row['lon']:.4f}")
                 if row['description']:
-                    st.markdown(f"**Description:** {row['description']}")
+                    st.markdown(f"**Services:** {row['description']}")
     
     st.divider()
     
