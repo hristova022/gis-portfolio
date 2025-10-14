@@ -12,6 +12,26 @@ This interactive map shows homeless services, shelters, and food banks across Lo
 with spatial analysis identifying service gaps and underserved areas.
 """)
 
+st.markdown("""
+### About This Analysis
+
+This project maps homeless services across Long Beach to identify service gaps 
+and help understand resource distribution. The spatial analysis reveals areas 
+where residents may lack access to critical services like emergency shelter, 
+food assistance, and support programs.
+
+**Data Sources:**
+- OpenStreetMap (community-contributed service locations)
+- Manual verification of known Long Beach homeless service providers
+
+**Methodology:**
+- Grid-based coverage analysis dividing Long Beach into zones
+- Service density calculation per zone
+- Gap identification highlighting underserved areas
+""")
+
+st.divider()
+
 # Load data
 @st.cache_data
 def load_data():
@@ -178,22 +198,6 @@ if data:
     st.divider()
     
     st.markdown("""
-    ### About This Analysis
-    
-    This project maps homeless services across Long Beach to identify service gaps 
-    and help understand resource distribution. The spatial analysis reveals areas 
-    where residents may lack access to critical services like emergency shelter, 
-    food assistance, and support programs.
-    
-    **Data Sources:**
-    - OpenStreetMap (community-contributed service locations)
-    - Manual verification of known Long Beach homeless service providers
-    
-    **Methodology:**
-    - Grid-based coverage analysis dividing Long Beach into zones
-    - Service density calculation per zone
-    - Gap identification highlighting underserved areas
-    
     **Potential Applications:**
     - Resource allocation planning for city services
     - Identifying optimal locations for new facilities
