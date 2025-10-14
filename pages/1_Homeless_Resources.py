@@ -8,26 +8,21 @@ st.set_page_config(page_title="Homeless Resources | GIS Portfolio", page_icon="�
 st.title("🏠 Long Beach Homeless Resources Mapper")
 
 st.markdown("""
-This interactive map shows homeless services, shelters, and food banks across Long Beach, 
-with spatial analysis identifying service gaps and underserved areas.
-""")
+### Why This Matters
 
-st.markdown("""
-### About This Analysis
+When someone experiencing homelessness needs help, **every mile matters**. This analysis identifies 
+neighborhoods where people may be walking 2+ miles to reach a shelter, meal program, or support services—
+distances that can be especially challenging for families with children, seniors, or individuals facing 
+health challenges.
 
-This project maps homeless services across Long Beach to identify service gaps 
-and help understand resource distribution. The spatial analysis reveals areas 
-where residents may lack access to critical services like emergency shelter, 
-food assistance, and support programs.
+**What you'll see:**
+- 🔴 **Red dots** = Emergency shelters providing overnight housing
+- 🟢 **Green dots** = Food banks and meal programs
+- 🔵 **Blue dots** = Support centers offering case management, healthcare, and job assistance
+- 🟠 **Orange circles** = Service gap zones where no resources exist within walking distance
 
-**Data Sources:**
-- OpenStreetMap (community-contributed service locations)
-- Manual verification of known Long Beach homeless service providers
-
-**Methodology:**
-- Grid-based coverage analysis dividing Long Beach into zones
-- Service density calculation per zone
-- Gap identification highlighting underserved areas
+This map helps identify where new facilities would have the biggest impact and ensures resources 
+reach the people who need them most.
 """)
 
 st.divider()
@@ -103,12 +98,23 @@ if data:
             }
             return colors.get(service_type, [128, 128, 128, 200])
         
+        def get_type_label(service_type):
+            labels = {
+                'shelter': 'Emergency Shelter',
+                'food_bank': 'Food Bank / Meal Program',
+                'social_facility': 'Support Services'
+            }
+            return labels.get(service_type, service_type)
+        
         filtered_df['color'] = filtered_df['type'].apply(get_color)
+        filtered_df['type_label'] = filtered_df['type'].apply(get_type_label)
         
         # Service gaps for circles
         gap_areas = df_coverage[df_coverage['service_count'] == 0].copy()
         gap_areas['radius'] = 800
         gap_areas['color'] = [[255, 165, 0, 50]] * len(gap_areas)
+        gap_areas['name'] = ['Service Gap Area'] * len(gap_areas)
+        gap_areas['type_label'] = ['No nearby services - residents may need to travel 1+ miles'] * len(gap_areas)
         
         # Create layers
         service_layer = pdk.Layer(
@@ -142,8 +148,8 @@ if data:
             layers=[gap_layer, service_layer],
             initial_view_state=view_state,
             tooltip={
-                'html': '<b>{name}</b><br/>{type}<br/>{address}',
-                'style': {'color': 'white'}
+                'html': '<b>{name}</b><br/><i>{type_label}</i><br/>{address}',
+                'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
             }
         )
         
