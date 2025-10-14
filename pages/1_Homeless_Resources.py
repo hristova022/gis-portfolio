@@ -147,7 +147,10 @@ with col1:
         'Pasadena': {'lat': 34.15, 'lon': -118.14, 'zoom': 12},
         'Santa Monica': {'lat': 34.02, 'lon': -118.49, 'zoom': 12}}
     
-    view_center = city_centers.get(selected_city, {'lat': 33.95, 'lon': -118.35, 'zoom': 9.5})
+    if selected_city != 'All' and selected_city in city_centers:
+        view_center = city_centers[selected_city]
+    else:
+        view_center = {'lat': 33.95, 'lon': -118.35, 'zoom': 9.5}
     
     if has_temporal:
         df_coverage = pd.DataFrame(data['coverage_analysis'])
