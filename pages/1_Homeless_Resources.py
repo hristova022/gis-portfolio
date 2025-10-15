@@ -120,6 +120,14 @@ with col3:
     search_term = st.text_input("Search Facility Name", placeholder="e.g., Food Bank",
         help="Search for a specific facility by name")
 
+# AI Predictive Heatmap Toggle
+if 'predictive_analysis' in data:
+    show_predictions = st.checkbox("🤖 Show AI Predictive Heatmap", value=False,
+        help="Display ML predictions of high-need areas based on distance to services, population density, and demographics")
+else:
+    show_predictions = False
+
+
 filtered_df = df_year_facilities.copy()
 if selected_type != 'All':
     filtered_df = filtered_df[filtered_df['type'] == selected_type]
@@ -129,6 +137,71 @@ if search_term:
     filtered_df = filtered_df[filtered_df['name'].str.contains(search_term, case=False, na=False)]
 
 st.divider()
+
+
+
+# Display AI Predictive Heatmap if enabled
+if show_predictions and 'predictive_analysis' in data:
+    st.markdown("### 🤖 AI Predictive Heatmap: Service Need Assessment")
+    st.caption("Machine Learning model identifying areas with highest need based on spatial analysis")
+    
+    col_pred1, col_pred2 = st.columns([2, 1])
+    
+    with col_pred1:
+        df_predictions = pd.DataFrame(data['predictive_analysis']['prediction_grid'])
+        
+        # Color by need: Red = high, Yellow = medium, Green = low
+        df_predictions['color'] = df_predictions['predicted_need'].apply(
+            lambda x: [int(255 * x/100), int(255 * (1 - x/100)), 0, 120]
+        )
+        
+        prediction_layer = pdk.Layer(
+            'ScatterplotLayer',
+            data=df_predictions,
+            get_position='[lon, lat]',
+            get_color='color',
+            get_radius=1000,
+            radius_min_pixels=3,
+            radius_max_pixels=20,
+            pickable=True
+        )
+        
+        view_pred = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9.5, pitch=0)
+        
+        r_pred = pdk.Deck(
+            layers=[prediction_layer],
+            initial_view_state=view_pred,
+            tooltip={
+                'html': '<b>Predicted Need Score:</b> {predicted_need:.1f}/100<br/><b>Risk Level:</b> {risk_level}',
+                'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+            }
+        )
+        
+        st.pydeck_chart(r_pred, key="ai_prediction_map")
+        st.caption("🔴 Red = High Need | 🟡 Yellow = Medium Need | 🟢 Green = Low Need")
+    
+    with col_pred2:
+        pred_stats = data['predictive_analysis']['statistics']
+        model_info = data['predictive_analysis']['model_info']
+        
+        st.markdown("**Model Performance:**")
+        st.metric("R² Score", f"{model_info['r2_score']:.3f}")
+        st.caption("Accuracy of predictions")
+        
+        st.markdown("**Areas Identified:**")
+        st.metric("High Need", pred_stats['high_need_areas'])
+        st.metric("Medium Need", pred_stats['medium_need_areas'])
+        st.metric("Low Need", pred_stats['low_need_areas'])
+        
+        with st.expander("📊 Model Details"):
+            st.markdown(f"**Algorithm:** {model_info['type']}")
+            st.markdown("**Top Features:**")
+            sorted_features = sorted(model_info['feature_importance'].items(), 
+                                   key=lambda x: x[1], reverse=True)
+            for feat, imp in sorted_features[:3]:
+                st.markdown(f"• {feat}: {imp:.0%}")
+    
+    st.divider()
 
 col1, col2 = st.columns([2, 1])
 
@@ -238,69 +311,6 @@ if len(filtered_df) > 20:
     st.info(f"📌 Showing first 20 of {len(filtered_df)} results.")
 
 st.divider()
-
-# AI/ML Predictive Analysis Section
-if has_temporal and 'predictive_analysis' in data:
-    st.markdown("## 🤖 AI-Powered Predictive Analysis")
-    st.markdown("Machine Learning model identifying areas with highest service need")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        show_predictions = st.checkbox("Show AI Predictive Heatmap", value=False,
-            help="Display ML model predictions of high-need areas based on distance, density, and demographics")
-        
-        if show_predictions:
-            df_predictions = pd.DataFrame(data['predictive_analysis']['prediction_grid'])
-            
-            df_predictions['color'] = df_predictions['predicted_need'].apply(
-                lambda x: [int(255 * x/100), int(255 * (1 - x/100)), 0, 100]
-            )
-            
-            prediction_layer = pdk.Layer(
-                'ScatterplotLayer',
-                data=df_predictions,
-                get_position='[lon, lat]',
-                get_color='color',
-                get_radius=800,
-                radius_min_pixels=2,
-                radius_max_pixels=15,
-                pickable=True
-            )
-            
-            view_state_pred = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9, pitch=0)
-            
-            r_pred = pdk.Deck(
-                layers=[prediction_layer],
-                initial_view_state=view_state_pred,
-                tooltip={
-                    'html': '<b>Predicted Need:</b> {predicted_need:.1f}/100<br/><b>Risk Level:</b> {risk_level}',
-                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                }
-            )
-            
-            st.pydeck_chart(r_pred, key="prediction_map")
-            st.caption("🔴 Red = High Need | 🟡 Yellow = Medium Need | 🟢 Green = Low Need")
-    
-    with col2:
-        pred_stats = data['predictive_analysis']['statistics']
-        model_info = data['predictive_analysis']['model_info']
-        
-        st.markdown("**Model Performance:**")
-        st.metric("R² Score", f"{model_info['r2_score']:.3f}",
-            help="Model accuracy: how well it predicts service need")
-        
-        st.markdown("**Predicted Areas:**")
-        st.metric("High Need Zones", pred_stats['high_need_areas'])
-        st.metric("Medium Need Zones", pred_stats['medium_need_areas'])
-        st.metric("Low Need Zones", pred_stats['low_need_areas'])
-        
-        with st.expander("📊 Model Details"):
-            st.markdown(f"**Algorithm:** {model_info['type']}")
-            st.markdown("**Features Used:**")
-            for feat, importance in sorted(model_info['feature_importance'].items(), 
-                                         key=lambda x: x[1], reverse=True):
-                st.markdown(f"• {feat}: {importance:.1%}")
 
 st.divider()
 
