@@ -7,7 +7,7 @@ st.set_page_config(
 )
 
 st.title("🗺️ GIS & AI Solutions Portfolio")
-st.subheader("Luba Hristova | Geospatial Analyst & Data Scientist")
+st.subheader("Luba Hristova | GIS Analyst | Spatial Data Science & AI")
 
 st.markdown("""
 **Long Beach, CA** | [LinkedIn](https://linkedin.com/in/luba-hristova) | [GitHub](https://github.com/hristova022)
