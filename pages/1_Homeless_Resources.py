@@ -221,21 +221,31 @@ with col2:
 st.divider()
 
 st.markdown(f"### 📋 Service Directory")
-st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities")
 
-for idx, row in filtered_df.head(20).iterrows():
-    with st.expander(f"📍 {row['name']} - {row.get('city', 'LA County')}"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**Type:** {row['type_label']}")
-            st.markdown(f"**Address:** {row['address']}")
-        with col2:
-            st.markdown(f"**City:** {row.get('city', 'N/A')}")
-            if row.get('description'):
-                st.markdown(f"**Services:** {row['description']}")
+# Show facilities in a more compact format
+if 'show_all_facilities' not in st.session_state:
+    st.session_state.show_all_facilities = False
 
-if len(filtered_df) > 20:
-    st.info(f"📌 Showing first 20 of {len(filtered_df)} results.")
+show_count = len(filtered_df) if st.session_state.show_all_facilities else min(5, len(filtered_df))
+
+st.caption(f"Showing {show_count} of {len(filtered_df)} facilities")
+
+# Compact table view
+for idx, row in filtered_df.head(show_count).iterrows():
+    with st.expander(f"📍 {row['name']} ({row.get('city', 'LA County')})"):
+        st.markdown(f"**{row['type_label']}** | {row['address']}")
+        if row.get('description'):
+            st.caption(row['description'])
+
+if len(filtered_df) > 5:
+    if not st.session_state.show_all_facilities:
+        if st.button(f"📄 Show All {len(filtered_df)} Facilities", key="show_all_btn"):
+            st.session_state.show_all_facilities = True
+            st.rerun()
+    else:
+        if st.button("📄 Show Less", key="show_less_btn"):
+            st.session_state.show_all_facilities = False
+            st.rerun()
 
 st.divider()
 
@@ -331,7 +341,7 @@ with col_w1:
     col_add, col_clear = st.columns(2)
     
     with col_add:
-        if st.button("➕ Add Facility", use_container_width=True):
+        if st.button("➕ Add Facility", use_container_width=True, key="add_facility_btn"):
             st.session_state.hypothetical_facilities.append({
                 'lat': new_lat,
                 'lon': new_lon,
@@ -345,7 +355,7 @@ with col_w1:
             st.rerun()
     
     with col_clear:
-        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0):
+        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0, key="clear_facilities_btn"):
             st.session_state.hypothetical_facilities = []
             st.rerun()
     
@@ -482,7 +492,7 @@ with col_w1:
     col_add, col_clear = st.columns(2)
     
     with col_add:
-        if st.button("➕ Add Facility", use_container_width=True):
+        if st.button("➕ Add Facility", use_container_width=True, key="add_facility_btn"):
             st.session_state.hypothetical_facilities.append({
                 'lat': new_lat,
                 'lon': new_lon,
@@ -496,7 +506,7 @@ with col_w1:
             st.rerun()
     
     with col_clear:
-        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0):
+        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0, key="clear_facilities_btn"):
             st.session_state.hypothetical_facilities = []
             st.rerun()
     
