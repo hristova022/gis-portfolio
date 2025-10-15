@@ -341,7 +341,7 @@ with col_w1:
     col_add, col_clear = st.columns(2)
     
     with col_add:
-        if st.button("➕ Add Facility", use_container_width=True, key="add_facility_btn"):
+        if st.button("➕ Add Facility", use_container_width=True, key="whatif_add_facility_1"):
             st.session_state.hypothetical_facilities.append({
                 'lat': new_lat,
                 'lon': new_lon,
@@ -355,7 +355,7 @@ with col_w1:
             st.rerun()
     
     with col_clear:
-        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0, key="clear_facilities_btn"):
+        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0, key="whatif_clear_all_1"):
             st.session_state.hypothetical_facilities = []
             st.rerun()
     
@@ -492,7 +492,7 @@ with col_w1:
     col_add, col_clear = st.columns(2)
     
     with col_add:
-        if st.button("➕ Add Facility", use_container_width=True, key="add_facility_btn"):
+        if st.button("➕ Add Facility", use_container_width=True, key="whatif_add_facility_2"):
             st.session_state.hypothetical_facilities.append({
                 'lat': new_lat,
                 'lon': new_lon,
@@ -506,7 +506,7 @@ with col_w1:
             st.rerun()
     
     with col_clear:
-        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0, key="clear_facilities_btn"):
+        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0, key="whatif_clear_all_2"):
             st.session_state.hypothetical_facilities = []
             st.rerun()
     
