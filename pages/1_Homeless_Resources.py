@@ -8,9 +8,9 @@ st.set_page_config(page_title="LA County Homeless Analysis | GIS Portfolio", pag
 
 st.title("🏠 LA County Homeless Services: Are We Keeping Pace?")
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_data():
-    url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/la_county_homeless_temporal.json"
+    url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/la_county_homeless_temporal.json?v=1729000000"
     try:
         import requests
         response = requests.get(url)
@@ -39,192 +39,6 @@ if has_temporal:
     ''')
     
     st.divider()
-
-# NEW: AI/ML Predictive Analysis Section
-if has_temporal and 'predictive_analysis' in data:
-    st.markdown("## 🤖 AI-Powered Predictive Analysis")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("""
-        **Machine Learning Model: Service Need Prediction**
-        
-        Using a Random Forest model trained on spatial features to predict areas with highest need for services.
-        """)
-        
-        # Show predictive heatmap
-        show_predictions = st.checkbox("Show AI Predictive Heatmap", value=False,
-            help="Display ML model predictions of high-need areas")
-        
-        if show_predictions:
-            df_predictions = pd.DataFrame(data['predictive_analysis']['prediction_grid'])
-            
-            # Color by predicted need
-            df_predictions['color'] = df_predictions['predicted_need'].apply(
-                lambda x: [int(255 * x/100), int(255 * (1 - x/100)), 0, 100]
-            )
-            
-            prediction_layer = pdk.Layer(
-                'ScatterplotLayer',
-                data=df_predictions,
-                get_position='[lon, lat]',
-                get_color='color',
-                get_radius=800,
-                radius_min_pixels=2,
-                radius_max_pixels=15,
-                pickable=True
-            )
-            
-            view_state_pred = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9, pitch=0)
-            
-            r_pred = pdk.Deck(
-                layers=[prediction_layer],
-                initial_view_state=view_state_pred,
-                tooltip={
-                    'html': '<b>Predicted Need:</b> {predicted_need:.1f}/100<br/><b>Risk Level:</b> {risk_level}',
-                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                }
-            )
-            
-            st.pydeck_chart(r_pred, key="prediction_map")
-            
-            st.caption("🔴 Red = High Need | 🟡 Yellow = Medium Need | 🟢 Green = Low Need")
-    
-    with col2:
-        pred_stats = data['predictive_analysis']['statistics']
-        model_info = data['predictive_analysis']['model_info']
-        
-        st.markdown("**Model Performance:**")
-        st.metric("R² Score", f"{model_info['r2_score']:.3f}",
-            help="How well the model explains variance in service need")
-        
-        st.markdown("**Predicted Areas:**")
-        st.metric("High Need Zones", pred_stats['high_need_areas'], 
-            help="Areas requiring immediate attention")
-        st.metric("Medium Need Zones", pred_stats['medium_need_areas'])
-        st.metric("Low Need Zones", pred_stats['low_need_areas'])
-        
-        with st.expander("📊 Model Details"):
-            st.markdown(f"**Algorithm:** {model_info['type']}")
-            st.markdown("**Features Used:**")
-            for feat, importance in sorted(model_info['feature_importance'].items(), 
-                                         key=lambda x: x[1], reverse=True):
-                st.markdown(f"• {feat}: {importance:.1%}")
-    
-    st.divider()
-
-# NEW: What-If Scenario Tool
-st.markdown("## 🎯 What-If Scenario Builder")
-st.markdown("**Interactive Decision Support Tool:** Add hypothetical facilities and see coverage impact in real-time")
-
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    st.markdown("### Add Hypothetical Facilities")
-    
-    # Initialize session state for hypothetical facilities
-    if 'hypothetical_facilities' not in st.session_state:
-        st.session_state.hypothetical_facilities = []
-    
-    col_a, col_b, col_c = st.columns(3)
-    
-    with col_a:
-        new_lat = st.number_input("Latitude", min_value=33.70, max_value=34.35, value=33.95, step=0.01)
-    with col_b:
-        new_lon = st.number_input("Longitude", min_value=-118.67, max_value=-118.05, value=-118.25, step=0.01)
-    with col_c:
-        new_type = st.selectbox("Type", ["shelter", "food_bank", "social_facility"])
-    
-    col_add, col_clear = st.columns(2)
-    
-    with col_add:
-        if st.button("➕ Add Facility", use_container_width=True):
-            st.session_state.hypothetical_facilities.append({
-                'lat': new_lat,
-                'lon': new_lon,
-                'type': new_type,
-                'name': f'Hypothetical {new_type}',
-                'hypothetical': True
-            })
-            st.success(f"Added hypothetical {new_type}!")
-            st.rerun()
-    
-    with col_clear:
-        if st.button("🗑️ Clear All", use_container_width=True):
-            st.session_state.hypothetical_facilities = []
-            st.rerun()
-    
-    # Show map with hypothetical facilities
-    if len(st.session_state.hypothetical_facilities) > 0:
-        # Combine real and hypothetical
-        combined_df = pd.concat([
-            filtered_df,
-            pd.DataFrame(st.session_state.hypothetical_facilities)
-        ], ignore_index=True)
-        
-        combined_df['color'] = combined_df.apply(
-            lambda row: [255, 255, 0, 200] if row.get('hypothetical') else get_color(row['type']),
-            axis=1
-        )
-        
-        combined_layer = pdk.Layer(
-            'ScatterplotLayer',
-            data=combined_df,
-            get_position='[lon, lat]',
-            get_color='color',
-            get_radius=200,
-            radius_min_pixels=3,
-            radius_max_pixels=20,
-            pickable=True
-        )
-        
-        view_whatif = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9.5, pitch=0)
-        
-        r_whatif = pdk.Deck(
-            layers=[combined_layer],
-            initial_view_state=view_whatif,
-            tooltip={'html': '<b>{name}</b><br/>{type}',
-                     'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}}
-        )
-        
-        st.pydeck_chart(r_whatif, key="whatif_map")
-        st.caption("🟡 Yellow = Hypothetical facilities you added")
-
-with col2:
-    st.markdown("### Impact Analysis")
-    
-    if len(st.session_state.hypothetical_facilities) > 0:
-        # Calculate coverage improvement
-        original_count = len(filtered_df)
-        new_count = len(st.session_state.hypothetical_facilities)
-        
-        st.metric("Hypothetical Facilities", new_count)
-        st.metric("Total Facilities", original_count + new_count,
-            delta=f"+{new_count}")
-        
-        # Calculate coverage change (simplified)
-        # In real version, recalculate service gaps
-        coverage_improvement = (new_count / original_count) * 100
-        
-        st.metric("Estimated Coverage Improvement", f"+{coverage_improvement:.1f}%",
-            help="Approximate improvement in service coverage")
-        
-        st.markdown("---")
-        st.markdown("**Facilities Added:**")
-        for i, fac in enumerate(st.session_state.hypothetical_facilities):
-            st.markdown(f"• {fac['type'].replace('_', ' ').title()} at ({fac['lat']:.3f}, {fac['lon']:.3f})")
-    else:
-        st.info("Add hypothetical facilities to see impact analysis")
-        st.markdown("""
-        **How to use:**
-        1. Enter coordinates for a new facility
-        2. Select facility type
-        3. Click 'Add Facility'
-        4. See coverage improvement in real-time
-        """)
-
-st.divider()
     
     col1, col2 = st.columns([1, 2])
     
@@ -259,7 +73,6 @@ st.divider()
     
     st.divider()
     
-    # Load facilities - use current_services for 2025, historical for other years
     if selected_year == 2025 and 'current_services' in data:
         df_year_facilities = pd.DataFrame(data['current_services'])
     else:
@@ -304,7 +117,7 @@ with col2:
         st.caption(f"🎯 Filtering to {selected_city}")
 
 with col3:
-    search_term = st.text_input("Search Facility Name", placeholder="e.g., Union Rescue",
+    search_term = st.text_input("Search Facility Name", placeholder="e.g., Food Bank",
         help="Search for a specific facility by name")
 
 filtered_df = df_year_facilities.copy()
@@ -321,7 +134,7 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader(f"📍 Service Locations Map - {selected_year}")
-    st.caption("Zoom and pan to explore. Hover over markers for facility details.")
+    st.caption(f"Showing {len(filtered_df)} facilities. Zoom and pan to explore.")
     
     def get_color(service_type):
         colors = {'shelter': [255, 0, 0, 200], 'food_bank': [0, 200, 0, 200], 'social_facility': [0, 100, 255, 200]}
@@ -334,12 +147,10 @@ with col1:
     filtered_df['color'] = filtered_df['type'].apply(get_color)
     filtered_df['type_label'] = filtered_df['type'].apply(get_type_label)
     
-    # Calculate center from filtered data
     if len(filtered_df) > 0:
         center_lat = filtered_df['lat'].mean()
         center_lon = filtered_df['lon'].mean()
         
-        # Adjust zoom based on spread
         lat_range = filtered_df['lat'].max() - filtered_df['lat'].min()
         lon_range = filtered_df['lon'].max() - filtered_df['lon'].min()
         max_range = max(lat_range, lon_range)
@@ -376,7 +187,6 @@ with col1:
     
     layers = [gap_layer, service_layer] if gap_layer else [service_layer]
     
-    # Force map update with unique key
     map_key = f"{selected_city}_{selected_type}_{selected_year}_{len(filtered_df)}"
     
     r = pdk.Deck(layers=layers, initial_view_state=view_state,
@@ -389,231 +199,29 @@ with col2:
     st.subheader("📊 Analysis Summary")
     st.metric("Facilities Shown", len(filtered_df))
     
+    st.markdown("**Services by Type:**")
+    type_counts = filtered_df['type'].value_counts()
+    for service_type, count in type_counts.items():
+        st.markdown(f"• {get_type_label(service_type)}: {count}")
+    
     if has_temporal:
-        st.markdown("**Services by Type:**")
-        type_counts = filtered_df['type'].value_counts()
-        for service_type, count in type_counts.items():
-            st.markdown(f"• {get_type_label(service_type)}: {count}")
         st.markdown("---")
         st.markdown(f"**Service Gap Areas:** {data['summary']['service_gap_areas']}")
-        st.caption("Orange zones on map show areas lacking nearby services")
+        st.caption("Orange zones show areas lacking nearby services")
     
     st.markdown('''
     ---
     **Map Legend:**
     - 🔴 **Emergency Shelters** - Overnight housing
     - 🟢 **Food Banks** - Meals and groceries  
-    - 🔵 **Support Services** - Case management, healthcare, job help
-    - 🟠 **Service Gap Zones** - No facilities within walking distance (1+ mile)
+    - 🔵 **Support Services** - Case management
+    - 🟠 **Service Gap Zones** - No facilities within 1+ mile
     ''')
 
 st.divider()
 
-# DETAILED METHODOLOGY SECTION
-st.markdown("## 📊 Methodology & Data Sources")
-st.markdown("*How this analysis was conducted and how you can verify the data*")
-
-tab1, tab2, tab3 = st.tabs(["📥 Data Collection", "🔬 Analysis Process", "✅ Verification & Reproducibility"])
-
-with tab1:
-    st.markdown("""
-    ### Data Collection Methods
-    
-    This analysis combines multiple authoritative data sources to create a comprehensive picture of homeless services in LA County.
-    
-    #### 1. OpenStreetMap (OSM) - Primary Geospatial Data
-    **Source:** [OpenStreetMap](https://www.openstreetmap.org/)
-    
-    - **What it is:** Community-maintained global map database with over 9 million contributors
-    - **How we use it:** Query OSM using Overpass API for facilities tagged as:
-      - `amenity=shelter` - Emergency shelters
-      - `amenity=food_bank` - Food distribution centers
-      - `amenity=social_facility` - Support service centers
-    - **API Used:** [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API)
-    - **Query Region:** LA County bounding box (33.70°N to 34.35°N, -118.67°W to -118.05°W)
-    
-    **Verify the data yourself:**
-    - Visit [Overpass Turbo](https://overpass-turbo.eu/) 
-    - Paste this query to see shelters in Long Beach:
-    ```
-    [out:json];
-    (
-      node["amenity"="shelter"](33.70,-118.25,33.85,-118.05);
-      way["amenity"="shelter"](33.70,-118.25,33.85,-118.05);
-    );
-    out center;
-    ```
-    
-    #### 2. Manual Verification - Ground Truth Data
-    **Sources:**
-    - [LA Homeless Services Authority (LAHSA)](https://www.lahsa.org/) - Official provider directory
-    - [211 LA County](https://211la.org/) - Community resource database
-    - Direct verification with city websites and facility contacts
-    
-    **Process:**
-    - Cross-referenced OSM data with official provider lists
-    - Added major facilities not yet mapped in OSM
-    - Verified addresses and service types through facility websites
-    - Excluded defunct or relocated facilities
-    
-    #### 3. Historical Homeless Count Data
-    **Source:** [LAHSA Point-in-Time Count](https://www.lahsa.org/data)
-    
-    - **What it is:** Annual census of homeless individuals conducted every January
-    - **Methodology:** Combination of street counts and shelter surveys
-    - **Data Used:** 2015-2024 counts (2025 estimated based on trend)
-    - **Access:** [Download raw data](https://www.lahsa.org/documents?id=4702-2023-greater-los-angeles-homeless-count-data)
-    
-    #### 4. Shelter Capacity Data
-    **Source:** LAHSA Annual Reports + LA County Department of Health Services
-    
-    - Bed capacity tracked from shelter inventory reports
-    - Includes emergency, transitional, and permanent supportive housing
-    - [2023 Report](https://www.lahsa.org/documents?id=6388-2023-annual-report)
-    """)
-
-with tab2:
-    st.markdown("""
-    ### Analysis Process
-    
-    #### Step 1: Data Processing (Python/Pandas)
-    **Tools:** Google Colab, GeoPandas, Pandas
-    
-    1. **API Query:** Retrieved facility data from Overpass API
-    2. **Data Cleaning:** 
-       - Removed duplicates by name and location
-       - Standardized address formats
-       - Categorized facility types
-    3. **Geocoding:** All facilities have verified lat/lon coordinates
-    
-    **Code Available:** All processing notebooks stored in project GitHub repository
-    
-    #### Step 2: Spatial Analysis (GIS)
-    **Method:** Grid-based coverage analysis
-    
-    1. **Grid Creation:** 
-       - Divided LA County into 380 grid cells (~20x19 grid)
-       - Each cell approximately 0.05° x 0.05° (roughly 3 miles x 3 miles)
-    
-    2. **Service Density Calculation:**
-       - Counted facilities within each grid cell
-       - Identified cells with zero services = "gap zones"
-    
-    3. **Distance Analysis:**
-       - Used Euclidean distance (straight-line) as proxy for accessibility
-       - 1 mile = walking distance threshold (approximately 20 minutes walk)
-       - Cells >1 mile from nearest service flagged as underserved
-    
-    **Why this matters:** People experiencing homelessness often lack transportation. Walking distance is critical.
-    
-    #### Step 3: Temporal Trend Analysis
-    **Method:** Historical comparison + linear projection
-    
-    1. **Trend Calculation:**
-       - Indexed 2015 as baseline (100)
-       - Tracked year-over-year growth rates
-       - Calculated per-capita metrics (beds per 100 homeless individuals)
-    
-    2. **Gap Analysis:**
-       - Compared homeless population growth rate vs shelter capacity growth rate
-       - Formula: Service Gap = (Homeless Growth % - Capacity Growth %)
-    
-    3. **Forecasting:**
-       - Linear regression on 2020-2024 data
-       - Projected 2027 needs assuming current trends continue
-       - Conservative estimate (doesn't account for policy interventions)
-    
-    #### Step 4: Visualization (Streamlit + Pydeck)
-    **Platform:** Streamlit Cloud (free tier)
-    **Mapping:** Pydeck (GPU-accelerated visualization)
-    
-    - Interactive filters allow exploration by city, service type, year
-    - Color coding: Red=shelters, Green=food, Blue=support, Orange=gaps
-    - Dynamic zoom adjusts to filtered data
-    """)
-
-with tab3:
-    st.markdown("""
-    ### Verification & Reproducibility
-    
-    #### How to Verify This Analysis
-    
-    **1. Check the Raw Data**
-    - All processed data available in [GitHub repository](https://github.com/hristova022/gis-portfolio/tree/main/data)
-    - Download `la_county_homeless_temporal.json` to inspect facility lists
-    - Compare against [LAHSA provider directory](https://www.lahsa.org/portal/apps/la-hop/)
-    
-    **2. Reproduce the Analysis**
-    - All Colab notebooks available in `/notebooks` folder
-    - Run notebooks yourself:
-      1. `01_homeless_resources_data.ipynb` - Data collection
-      2. `01c_la_county_temporal_homeless_analysis.ipynb` - Temporal analysis
-    - No API keys required for OSM data
-    
-    **3. Cross-Reference Facilities**
-    Test a specific facility:
-    - Find it on the map
-    - Google the address to verify it exists
-    - Call the facility to confirm services offered
-    
-    **4. Validate Homeless Count Numbers**
-    - Visit [LAHSA Data Portal](https://www.lahsa.org/data)
-    - Compare our numbers with official reports
-    - Our data: {data['homeless_trends'][0] if has_temporal else 'See data'} 
-    
-    #### Known Limitations
-    
-    **1. OSM Data Completeness**
-    - Not all facilities may be mapped in OSM
-    - Bias toward larger, well-known facilities
-    - Mitigation: Manual verification added 15+ major facilities
-    
-    **2. Service Hours Not Included**
-    - Analysis shows location only, not operating hours
-    - Some facilities may be daytime-only or seasonal
-    - Future enhancement: Add hours of operation
-    
-    **3. Capacity vs. Availability**
-    - Shelter bed counts show total capacity, not current availability
-    - Many shelters operate at or near 100% capacity
-    - Does not account for admission requirements or waitlists
-    
-    **4. Simplified Distance Metric**
-    - Uses straight-line distance, not walking routes
-    - Doesn't account for barriers (highways, rivers, terrain)
-    - Future enhancement: Network analysis with actual walking paths
-    
-    #### Assumptions Made
-    
-    1. **Historical Facility Data:** Facilities before 2020 estimated using sampling (60% of current in 2015, scaling up)
-    2. **2025 Projections:** Based on 2020-2024 trend, assumes no major policy changes
-    3. **Service Gap Threshold:** 1 mile = underserved (standard urban planning metric)
-    
-    #### Updates & Maintenance
-    
-    - **Data Freshness:** Last updated October 2025
-    - **Update Frequency:** Can be re-run quarterly with latest LAHSA data
-    - **Community Contributions:** Submit corrections via GitHub issues
-    
-    #### Academic References
-    
-    This analysis methodology aligns with:
-    - **Spatial Accessibility Analysis:** [Luo & Wang, 2003](https://doi.org/10.1068/b29120) - Two-step floating catchment area method
-    - **Service Gap Analysis:** [Guagliardo, 2004](https://doi.org/10.1186/1476-072X-3-3) - Spatial accessibility to healthcare
-    - **Urban Planning Standards:** [American Planning Association](https://www.planning.org/) - 1/4 to 1/2 mile walkability standards
-    
-    #### Contact for Questions
-    
-    Questions about methodology? Found an error?
-    - GitHub: [@hristova022](https://github.com/hristova022/gis-portfolio)
-    - LinkedIn: [Luba Hristova](https://linkedin.com/in/luba-hristova)
-    """)
-
-st.divider()
-
-# Service directory
 st.markdown(f"### 📋 Service Directory")
-st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities matching your filters")
+st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities")
 
 for idx, row in filtered_df.head(20).iterrows():
     with st.expander(f"📍 {row['name']} - {row.get('city', 'LA County')}"):
@@ -627,7 +235,7 @@ for idx, row in filtered_df.head(20).iterrows():
                 st.markdown(f"**Services:** {row['description']}")
 
 if len(filtered_df) > 20:
-    st.info(f"📌 Showing first 20 of {len(filtered_df)} results. Use filters above to narrow your search.")
+    st.info(f"📌 Showing first 20 of {len(filtered_df)} results.")
 
 st.divider()
 
