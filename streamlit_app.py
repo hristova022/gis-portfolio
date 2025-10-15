@@ -21,17 +21,16 @@ with col1:
     st.markdown("""
     ## About This Portfolio
     
-    Interactive case studies demonstrating expertise in **geospatial analysis** and **artificial intelligence**, 
-    combining GIS techniques with machine learning to solve complex spatial problems.
+    Interactive case studies demonstrating real-world applications of GIS analysis, 
+    AI/ML, and spatial data science for community impact and disaster response.
     
-    Each project showcases the ability to work with spatial data, build analytical models, 
-    and create interactive visualizations using industry-standard tools and techniques.
+    Each project uses **free, open-source tools** and **publicly available data** to solve 
+    practical problems in Long Beach and Southern California.
     
-    ### Technical Expertise
-    - **GIS & Spatial Analysis:** 6+ years working with ArcGIS, QGIS, and Python geospatial libraries
-    - **AI & Machine Learning:** Predictive modeling, computer vision, data-driven decision making
-    - **Data Engineering:** Processing large datasets, API integration, cloud-based workflows
-    - **Full-Stack Development:** From data collection to interactive web applications
+    ### Technical Background
+    - 6+ years experience in GIS, aerial imagery analysis, and AI-powered data insights
+    - Worked with top 10 U.S. insurance companies on disaster response and claims automation
+    - Expertise in ArcGIS Enterprise, Python geospatial stack, and cloud-based solutions
     """)
 
 with col2:
@@ -114,9 +113,10 @@ st.divider()
 st.markdown("""
 ### 💡 About Me
 
-I'm a GIS professional with expertise in artificial intelligence and spatial data science. 
-My work combines geospatial analysis with machine learning to create data-driven solutions 
-for complex real-world problems, from disaster response to community planning.
+I'm a Solutions Engineer with a passion for using GIS and AI to solve real-world problems. 
+My experience includes working with insurance companies on disaster response, modernizing 
+national land information systems, and building geospatial workflows that help people make 
+better decisions faster.
 
 **Want to connect?** Reach out on [LinkedIn](https://linkedin.com/in/luba-hristova) or 
 check out the code on [GitHub](https://github.com/hristova022/gis-portfolio).
