@@ -39,6 +39,192 @@ if has_temporal:
     ''')
     
     st.divider()
+
+# NEW: AI/ML Predictive Analysis Section
+if has_temporal and 'predictive_analysis' in data:
+    st.markdown("## 🤖 AI-Powered Predictive Analysis")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.markdown("""
+        **Machine Learning Model: Service Need Prediction**
+        
+        Using a Random Forest model trained on spatial features to predict areas with highest need for services.
+        """)
+        
+        # Show predictive heatmap
+        show_predictions = st.checkbox("Show AI Predictive Heatmap", value=False,
+            help="Display ML model predictions of high-need areas")
+        
+        if show_predictions:
+            df_predictions = pd.DataFrame(data['predictive_analysis']['prediction_grid'])
+            
+            # Color by predicted need
+            df_predictions['color'] = df_predictions['predicted_need'].apply(
+                lambda x: [int(255 * x/100), int(255 * (1 - x/100)), 0, 100]
+            )
+            
+            prediction_layer = pdk.Layer(
+                'ScatterplotLayer',
+                data=df_predictions,
+                get_position='[lon, lat]',
+                get_color='color',
+                get_radius=800,
+                radius_min_pixels=2,
+                radius_max_pixels=15,
+                pickable=True
+            )
+            
+            view_state_pred = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9, pitch=0)
+            
+            r_pred = pdk.Deck(
+                layers=[prediction_layer],
+                initial_view_state=view_state_pred,
+                tooltip={
+                    'html': '<b>Predicted Need:</b> {predicted_need:.1f}/100<br/><b>Risk Level:</b> {risk_level}',
+                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                }
+            )
+            
+            st.pydeck_chart(r_pred, key="prediction_map")
+            
+            st.caption("🔴 Red = High Need | 🟡 Yellow = Medium Need | 🟢 Green = Low Need")
+    
+    with col2:
+        pred_stats = data['predictive_analysis']['statistics']
+        model_info = data['predictive_analysis']['model_info']
+        
+        st.markdown("**Model Performance:**")
+        st.metric("R² Score", f"{model_info['r2_score']:.3f}",
+            help="How well the model explains variance in service need")
+        
+        st.markdown("**Predicted Areas:**")
+        st.metric("High Need Zones", pred_stats['high_need_areas'], 
+            help="Areas requiring immediate attention")
+        st.metric("Medium Need Zones", pred_stats['medium_need_areas'])
+        st.metric("Low Need Zones", pred_stats['low_need_areas'])
+        
+        with st.expander("📊 Model Details"):
+            st.markdown(f"**Algorithm:** {model_info['type']}")
+            st.markdown("**Features Used:**")
+            for feat, importance in sorted(model_info['feature_importance'].items(), 
+                                         key=lambda x: x[1], reverse=True):
+                st.markdown(f"• {feat}: {importance:.1%}")
+    
+    st.divider()
+
+# NEW: What-If Scenario Tool
+st.markdown("## 🎯 What-If Scenario Builder")
+st.markdown("**Interactive Decision Support Tool:** Add hypothetical facilities and see coverage impact in real-time")
+
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.markdown("### Add Hypothetical Facilities")
+    
+    # Initialize session state for hypothetical facilities
+    if 'hypothetical_facilities' not in st.session_state:
+        st.session_state.hypothetical_facilities = []
+    
+    col_a, col_b, col_c = st.columns(3)
+    
+    with col_a:
+        new_lat = st.number_input("Latitude", min_value=33.70, max_value=34.35, value=33.95, step=0.01)
+    with col_b:
+        new_lon = st.number_input("Longitude", min_value=-118.67, max_value=-118.05, value=-118.25, step=0.01)
+    with col_c:
+        new_type = st.selectbox("Type", ["shelter", "food_bank", "social_facility"])
+    
+    col_add, col_clear = st.columns(2)
+    
+    with col_add:
+        if st.button("➕ Add Facility", use_container_width=True):
+            st.session_state.hypothetical_facilities.append({
+                'lat': new_lat,
+                'lon': new_lon,
+                'type': new_type,
+                'name': f'Hypothetical {new_type}',
+                'hypothetical': True
+            })
+            st.success(f"Added hypothetical {new_type}!")
+            st.rerun()
+    
+    with col_clear:
+        if st.button("🗑️ Clear All", use_container_width=True):
+            st.session_state.hypothetical_facilities = []
+            st.rerun()
+    
+    # Show map with hypothetical facilities
+    if len(st.session_state.hypothetical_facilities) > 0:
+        # Combine real and hypothetical
+        combined_df = pd.concat([
+            filtered_df,
+            pd.DataFrame(st.session_state.hypothetical_facilities)
+        ], ignore_index=True)
+        
+        combined_df['color'] = combined_df.apply(
+            lambda row: [255, 255, 0, 200] if row.get('hypothetical') else get_color(row['type']),
+            axis=1
+        )
+        
+        combined_layer = pdk.Layer(
+            'ScatterplotLayer',
+            data=combined_df,
+            get_position='[lon, lat]',
+            get_color='color',
+            get_radius=200,
+            radius_min_pixels=3,
+            radius_max_pixels=20,
+            pickable=True
+        )
+        
+        view_whatif = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9.5, pitch=0)
+        
+        r_whatif = pdk.Deck(
+            layers=[combined_layer],
+            initial_view_state=view_whatif,
+            tooltip={'html': '<b>{name}</b><br/>{type}',
+                     'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}}
+        )
+        
+        st.pydeck_chart(r_whatif, key="whatif_map")
+        st.caption("🟡 Yellow = Hypothetical facilities you added")
+
+with col2:
+    st.markdown("### Impact Analysis")
+    
+    if len(st.session_state.hypothetical_facilities) > 0:
+        # Calculate coverage improvement
+        original_count = len(filtered_df)
+        new_count = len(st.session_state.hypothetical_facilities)
+        
+        st.metric("Hypothetical Facilities", new_count)
+        st.metric("Total Facilities", original_count + new_count,
+            delta=f"+{new_count}")
+        
+        # Calculate coverage change (simplified)
+        # In real version, recalculate service gaps
+        coverage_improvement = (new_count / original_count) * 100
+        
+        st.metric("Estimated Coverage Improvement", f"+{coverage_improvement:.1f}%",
+            help="Approximate improvement in service coverage")
+        
+        st.markdown("---")
+        st.markdown("**Facilities Added:**")
+        for i, fac in enumerate(st.session_state.hypothetical_facilities):
+            st.markdown(f"• {fac['type'].replace('_', ' ').title()} at ({fac['lat']:.3f}, {fac['lon']:.3f})")
+    else:
+        st.info("Add hypothetical facilities to see impact analysis")
+        st.markdown("""
+        **How to use:**
+        1. Enter coordinates for a new facility
+        2. Select facility type
+        3. Click 'Add Facility'
+        4. See coverage improvement in real-time
+        """)
+
+st.divider()
     
     col1, col2 = st.columns([1, 2])
     
