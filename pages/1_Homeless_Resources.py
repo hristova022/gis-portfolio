@@ -120,19 +120,6 @@ with col3:
     search_term = st.text_input("Search Facility Name", placeholder="e.g., Food Bank",
         help="Search for a specific facility by name")
 
-# AI Predictive Heatmap Toggle
-if 'predictive_analysis' in data:
-    show_predictions = st.checkbox("🤖 Show AI Predictive Heatmap", value=False)
-    if show_predictions:
-        st.caption("""
-        **How this works:** Machine Learning model (Random Forest) analyzes 6 spatial features to predict 
-        service need: distance to facilities, nearby service count, population density, and socioeconomic factors. 
-        Higher scores (red) indicate areas with greatest need.
-        """)
-else:
-    show_predictions = False
-
-
 filtered_df = df_year_facilities.copy()
 if selected_type != 'All':
     filtered_df = filtered_df[filtered_df['type'] == selected_type]
@@ -142,10 +129,6 @@ if search_term:
     filtered_df = filtered_df[filtered_df['name'].str.contains(search_term, case=False, na=False)]
 
 st.divider()
-
-
-
-    st.divider()
 
 col1, col2 = st.columns([2, 1])
 
@@ -237,83 +220,6 @@ with col2:
 
 st.divider()
 
-# AI Predictive Heatmap (below main map)
-if show_predictions and 'predictive_analysis' in data:
-    st.markdown("### 🤖 AI Predictive Analysis: Service Need Assessment")
-    
-    col_ai1, col_ai2 = st.columns([2, 1])
-    
-    with col_ai1:
-        st.caption("Machine Learning model identifying areas with highest need for homeless services")
-        
-        df_predictions = pd.DataFrame(data['predictive_analysis']['prediction_grid'])
-        
-        # Color by need: Red = high, Yellow = medium, Green = low
-        df_predictions['color'] = df_predictions['predicted_need'].apply(
-            lambda x: [int(255 * x/100), int(255 * (1 - x/100)), 0, 120]
-        )
-        
-        prediction_layer = pdk.Layer(
-            'ScatterplotLayer',
-            data=df_predictions,
-            get_position='[lon, lat]',
-            get_color='color',
-            get_radius=1000,
-            radius_min_pixels=3,
-            radius_max_pixels=20,
-            pickable=True
-        )
-        
-        view_pred = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9.5, pitch=0)
-        
-        r_pred = pdk.Deck(
-            layers=[prediction_layer],
-            initial_view_state=view_pred,
-            tooltip={
-                'html': '<b>Need Score:</b> {predicted_need:.0f}/100<br/><b>Priority Level:</b> {risk_level}',
-                'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-            }
-        )
-        
-        st.pydeck_chart(r_pred, key="ai_prediction_heatmap")
-        st.caption("🔴 Red = High Need | 🟡 Yellow = Medium Need | 🟢 Green = Low Need")
-    
-    with col_ai2:
-        pred_stats = data['predictive_analysis']['statistics']
-        model_info = data['predictive_analysis']['model_info']
-        
-        st.markdown("**Areas Identified:**")
-        st.metric("High Need Zones", pred_stats['high_need_areas'], 
-                 help="Areas requiring immediate service expansion")
-        st.metric("Medium Need Zones", pred_stats['medium_need_areas'])
-        st.metric("Low Need Zones", pred_stats['low_need_areas'])
-        
-        st.markdown("---")
-        
-        with st.expander("📊 Model Features & Importance"):
-            st.markdown(f"**Algorithm:** {model_info['type']}")
-            st.markdown("**Features Analyzed:**")
-            
-            # Clean up feature names
-            feature_labels = {
-                'distance_to_nearest': 'Distance to Nearest Service',
-                'nearby_facility_count': 'Nearby Facility Count',
-                'distance_to_shelter': 'Distance to Shelter',
-                'distance_to_food': 'Distance to Food Bank',
-                'population_density': 'Population Density',
-                'poverty_rate': 'Poverty Rate'
-            }
-            
-            sorted_features = sorted(model_info['feature_importance'].items(), 
-                                   key=lambda x: x[1], reverse=True)
-            for feat, imp in sorted_features:
-                clean_name = feature_labels.get(feat, feat.replace('_', ' ').title())
-                st.markdown(f"• {clean_name}: {imp:.0%}")
-    
-    st.divider()
-
-
-
 st.markdown(f"### 📋 Service Directory")
 st.caption(f"Showing {min(20, len(filtered_df))} of {len(filtered_df)} facilities")
 
@@ -330,8 +236,6 @@ for idx, row in filtered_df.head(20).iterrows():
 
 if len(filtered_df) > 20:
     st.info(f"📌 Showing first 20 of {len(filtered_df)} results.")
-
-st.divider()
 
 st.divider()
 
