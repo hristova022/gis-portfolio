@@ -239,6 +239,71 @@ if len(filtered_df) > 20:
 
 st.divider()
 
+# AI Predictive Heatmap Section
+if 'predictive_analysis' in data:
+    st.markdown("## 🤖 AI-Powered Predictive Analysis")
+    st.caption("Machine Learning model identifying areas with highest need for homeless services")
+    
+    show_ai = st.checkbox("Show Predictive Heatmap", value=False, 
+                          help="Random Forest model analyzes distance to services, population density, and poverty rates")
+    
+    if show_ai:
+        st.caption("**How it works:** Analyzes 6 features (distance to facilities, density, demographics) to predict service need")
+        
+        col_a, col_b = st.columns([3, 1])
+        
+        with col_a:
+            df_pred = pd.DataFrame(data['predictive_analysis']['prediction_grid'])
+            df_pred['color'] = df_pred['predicted_need'].apply(
+                lambda x: [int(255 * x/100), int(255 * (1 - x/100)), 0, 100]
+            )
+            
+            pred_layer = pdk.Layer(
+                'ScatterplotLayer',
+                data=df_pred,
+                get_position='[lon, lat]',
+                get_color='color',
+                get_radius=1000,
+                radius_min_pixels=3,
+                radius_max_pixels=20,
+                pickable=True
+            )
+            
+            view_pred = pdk.ViewState(latitude=33.95, longitude=-118.35, zoom=9.5)
+            
+            deck_pred = pdk.Deck(
+                layers=[pred_layer],
+                initial_view_state=view_pred,
+                tooltip={
+                    'html': '<b>Need Score:</b> {predicted_need:.0f}<br/><b>Level:</b> {risk_level}',
+                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                }
+            )
+            
+            st.pydeck_chart(deck_pred, key="ai_heatmap")
+            st.caption("🔴 Red = High Need | 🟡 Yellow = Medium | 🟢 Green = Low Need")
+        
+        with col_b:
+            stats = data['predictive_analysis']['statistics']
+            st.metric("High Need Areas", stats['high_need_areas'])
+            st.metric("Medium Need", stats['medium_need_areas'])
+            st.metric("Low Need", stats['low_need_areas'])
+            
+            with st.expander("Model Details"):
+                st.write("**Features:**")
+                features = {
+                    'distance_to_nearest': 'Distance to Services',
+                    'nearby_facility_count': 'Facility Count',
+                    'population_density': 'Population Density',
+                    'poverty_rate': 'Poverty Rate',
+                    'distance_to_shelter': 'Distance to Shelter',
+                    'distance_to_food': 'Distance to Food'
+                }
+                for key, val in features.items():
+                    st.write(f"• {val}")
+    
+    st.divider()
+
 st.markdown('''
 ### 💡 Key Takeaways
 
