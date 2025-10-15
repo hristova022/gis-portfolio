@@ -316,6 +316,151 @@ if 'predictive_analysis' in data:
 
 st.divider()
 
+# What-If Scenario Builder
+st.markdown("## 🎯 What-If Scenario Builder")
+st.caption("Test new facility placements and see coverage impact in real-time")
+
+if 'hypothetical_facilities' not in st.session_state:
+    st.session_state.hypothetical_facilities = []
+
+col_w1, col_w2 = st.columns([2, 1])
+
+with col_w1:
+    st.markdown("### Add Hypothetical Facility")
+    
+    use_address = st.checkbox("📍 Use address search", value=True, key="use_address_toggle")
+    
+    if use_address:
+        address_input = st.text_input("Enter LA County address", 
+                                      placeholder="e.g., City Hall, Long Beach, CA",
+                                      key="address_search_input")
+        
+        if address_input and st.button("🔍 Find Location", key="geocode_search_btn"):
+            try:
+                import requests
+                geocode_url = "https://nominatim.openstreetmap.org/search"
+                params = {
+                    'q': address_input + ", Los Angeles County, California",
+                    'format': 'json',
+                    'limit': 1
+                }
+                headers = {'User-Agent': 'GIS-Portfolio-Streamlit'}
+                
+                response = requests.get(geocode_url, params=params, headers=headers)
+                results = response.json()
+                
+                if results:
+                    st.session_state.temp_lat = float(results[0]['lat'])
+                    st.session_state.temp_lon = float(results[0]['lon'])
+                    st.success(f"✓ Location found!")
+                else:
+                    st.error("Address not found. Try being more specific.")
+            except:
+                st.error("Geocoding failed. Try coordinates instead.")
+        
+        if 'temp_lat' in st.session_state:
+            st.caption(f"📍 {st.session_state.temp_lat:.4f}, {st.session_state.temp_lon:.4f}")
+            new_lat = st.session_state.temp_lat
+            new_lon = st.session_state.temp_lon
+        else:
+            new_lat = 34.05
+            new_lon = -118.25
+    else:
+        col_a, col_b = st.columns(2)
+        with col_a:
+            new_lat = st.number_input("Latitude", min_value=33.70, max_value=34.35, 
+                                     value=34.05, step=0.01, key="manual_lat_input")
+        with col_b:
+            new_lon = st.number_input("Longitude", min_value=-118.67, max_value=-118.05, 
+                                     value=-118.25, step=0.01, key="manual_lon_input")
+    
+    new_type = st.selectbox("Facility Type", ["shelter", "food_bank", "social_facility"], 
+                           format_func=lambda x: {"shelter": "Emergency Shelter", 
+                                                  "food_bank": "Food Bank", 
+                                                  "social_facility": "Support Services"}[x],
+                           key="facility_type_select")
+    
+    col_add, col_clear = st.columns(2)
+    
+    with col_add:
+        if st.button("➕ Add Facility", use_container_width=True, key="add_hypo_facility"):
+            st.session_state.hypothetical_facilities.append({
+                'lat': new_lat,
+                'lon': new_lon,
+                'type': new_type,
+                'name': f'Hypothetical {new_type.replace("_", " ").title()}',
+                'city': 'Proposed',
+                'address': f'{new_lat:.3f}, {new_lon:.3f}',
+                'hypothetical': True
+            })
+            st.success("✓ Facility added!")
+            st.rerun()
+    
+    with col_clear:
+        if st.button("🗑️ Clear All", use_container_width=True, 
+                    disabled=len(st.session_state.hypothetical_facilities)==0,
+                    key="clear_hypo_facilities"):
+            st.session_state.hypothetical_facilities = []
+            st.rerun()
+    
+    if len(st.session_state.hypothetical_facilities) > 0:
+        st.markdown(f"**Scenario with {len(st.session_state.hypothetical_facilities)} hypothetical facilities:**")
+        
+        # Existing facilities
+        existing_df = df_year_facilities.copy()
+        existing_df['color'] = existing_df['type'].apply(get_color)
+        existing_df['type_label'] = existing_df['type'].apply(get_type_label)
+        
+        # Hypothetical facilities
+        hypo_df = pd.DataFrame(st.session_state.hypothetical_facilities)
+        hypo_df['color'] = [[255, 215, 0, 230]] * len(hypo_df)
+        hypo_df['type_label'] = hypo_df['type'].apply(get_type_label)
+        
+        # Two layers
+        existing_layer = pdk.Layer('ScatterplotLayer', data=existing_df, 
+            get_position='[lon, lat]', get_color='color', get_radius=180,
+            radius_min_pixels=3, radius_max_pixels=15, pickable=True)
+        
+        hypo_layer = pdk.Layer('ScatterplotLayer', data=hypo_df,
+            get_position='[lon, lat]', get_color='color', get_radius=350,
+            radius_min_pixels=6, radius_max_pixels=35, pickable=True)
+        
+        view_state_whatif = pdk.ViewState(latitude=34.00, longitude=-118.30, zoom=9.5)
+        
+        deck_whatif = pdk.Deck(
+            layers=[existing_layer, hypo_layer],
+            initial_view_state=view_state_whatif,
+            tooltip={'html': '<b>{name}</b><br/>{type_label}<br/>{city}',
+                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}}
+        )
+        
+        st.pydeck_chart(deck_whatif, key="whatif_scenario_complete")
+        st.caption("🔴 Red = Shelters | 🟢 Green = Food Banks | 🔵 Blue = Support | 🟡 GOLD = Your Hypothetical")
+
+with col_w2:
+    st.markdown("### Impact Analysis")
+    
+    if len(st.session_state.hypothetical_facilities) > 0:
+        original = len(df_year_facilities)
+        added = len(st.session_state.hypothetical_facilities)
+        
+        st.metric("Existing Facilities", original)
+        st.metric("Added", added, delta=f"+{added}")
+        st.metric("New Total", original + added)
+        
+        improvement = (added / original) * 100
+        st.metric("Coverage Increase", f"+{improvement:.1f}%")
+        
+        st.markdown("---")
+        st.markdown("**Your Additions:**")
+        for i, fac in enumerate(st.session_state.hypothetical_facilities, 1):
+            st.write(f"{i}. {fac['type'].replace('_', ' ').title()}")
+            st.caption(f"   {fac['lat']:.3f}, {fac['lon']:.3f}")
+    else:
+        st.info("Add hypothetical facilities to see impact analysis")
+
+st.divider()
+
 # DETAILED METHODOLOGY SECTION
 st.markdown("## 📊 Methodology & Data Sources")
 st.markdown("*How this analysis was conducted and how you can verify the data*")
