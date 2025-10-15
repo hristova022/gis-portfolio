@@ -304,6 +304,121 @@ if 'predictive_analysis' in data:
     
     st.divider()
 
+# What-If Scenario Builder
+st.markdown("## 🎯 What-If Scenario Builder")
+st.caption("Interactive decision support tool: Add hypothetical facilities and see coverage impact")
+
+if 'hypothetical_facilities' not in st.session_state:
+    st.session_state.hypothetical_facilities = []
+
+col_w1, col_w2 = st.columns([2, 1])
+
+with col_w1:
+    st.markdown("### Add Hypothetical Facility")
+    
+    col_a, col_b, col_c = st.columns(3)
+    
+    with col_a:
+        new_lat = st.number_input("Latitude", min_value=33.70, max_value=34.35, value=34.05, step=0.01, key="new_lat")
+    with col_b:
+        new_lon = st.number_input("Longitude", min_value=-118.67, max_value=-118.05, value=-118.25, step=0.01, key="new_lon")
+    with col_c:
+        new_type = st.selectbox("Type", ["shelter", "food_bank", "social_facility"], 
+                                format_func=lambda x: {"shelter": "Emergency Shelter", 
+                                                       "food_bank": "Food Bank", 
+                                                       "social_facility": "Support Services"}[x])
+    
+    col_add, col_clear = st.columns(2)
+    
+    with col_add:
+        if st.button("➕ Add Facility", use_container_width=True):
+            st.session_state.hypothetical_facilities.append({
+                'lat': new_lat,
+                'lon': new_lon,
+                'type': new_type,
+                'name': f'Hypothetical {new_type.replace("_", " ").title()}',
+                'city': 'Proposed',
+                'address': f'{new_lat:.3f}, {new_lon:.3f}',
+                'hypothetical': True
+            })
+            st.success(f"✓ Added {new_type.replace('_', ' ')}!")
+            st.rerun()
+    
+    with col_clear:
+        if st.button("🗑️ Clear All", use_container_width=True, disabled=len(st.session_state.hypothetical_facilities)==0):
+            st.session_state.hypothetical_facilities = []
+            st.rerun()
+    
+    if len(st.session_state.hypothetical_facilities) > 0:
+        st.markdown("**Showing scenario with hypothetical facilities:**")
+        
+        combined_df = pd.concat([
+            df_year_facilities,
+            pd.DataFrame(st.session_state.hypothetical_facilities)
+        ], ignore_index=True)
+        
+        combined_df['color'] = combined_df.apply(
+            lambda row: [255, 255, 0, 220] if row.get('hypothetical') else get_color(row['type']),
+            axis=1
+        )
+        combined_df['type_label'] = combined_df['type'].apply(get_type_label)
+        
+        combined_layer = pdk.Layer(
+            'ScatterplotLayer',
+            data=combined_df,
+            get_position='[lon, lat]',
+            get_color='color',
+            get_radius=250,
+            radius_min_pixels=4,
+            radius_max_pixels=25,
+            pickable=True
+        )
+        
+        view_whatif = pdk.ViewState(latitude=34.00, longitude=-118.30, zoom=9.5)
+        
+        deck_whatif = pdk.Deck(
+            layers=[combined_layer],
+            initial_view_state=view_whatif,
+            tooltip={'html': '<b>{name}</b><br/>{type_label}<br/>{city}',
+                     'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}}
+        )
+        
+        st.pydeck_chart(deck_whatif, key="whatif_scenario")
+        st.caption("🟡 Yellow markers = Your hypothetical facilities")
+
+with col_w2:
+    st.markdown("### Impact Analysis")
+    
+    if len(st.session_state.hypothetical_facilities) > 0:
+        original = len(df_year_facilities)
+        added = len(st.session_state.hypothetical_facilities)
+        
+        st.metric("Original Facilities", original)
+        st.metric("Added Facilities", added, delta=f"+{added}")
+        st.metric("Total", original + added)
+        
+        improvement = (added / original) * 100
+        st.metric("Coverage Increase", f"+{improvement:.1f}%", 
+                 help="Estimated improvement in geographic coverage")
+        
+        st.markdown("---")
+        st.markdown("**Added Facilities:**")
+        for fac in st.session_state.hypothetical_facilities:
+            type_label = fac['type'].replace('_', ' ').title()
+            st.write(f"• {type_label}")
+            st.caption(f"  📍 {fac['lat']:.3f}, {fac['lon']:.3f}")
+    else:
+        st.info("Add facilities to see impact")
+        st.markdown('''**How to use:**
+        
+1. Enter coordinates
+2. Select type  
+3. Click Add
+4. See coverage change
+        ''')
+
+st.divider()
+
 st.markdown('''
 ### 💡 Key Takeaways
 
