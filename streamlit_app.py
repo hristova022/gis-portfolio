@@ -1,22 +1,4 @@
-# Restore clean homepage
-
-import os
-from getpass import getpass
-
-github_token = getpass('Enter your GitHub token: ')
-
-!git config --global user.email "hristova022@gmail.com"
-!git config --global user.name "Luba Hristova"
-
-repo_url = f"https://{github_token}@github.com/hristova022/gis-portfolio.git"
-
-!rm -rf gis-portfolio
-!git clone {repo_url}
-os.chdir('gis-portfolio')
-
-print("\nRestoring clean homepage...")
-
-clean_homepage = '''import streamlit as st
+import streamlit as st
 
 st.set_page_config(
     page_title="GIS Portfolio | Luba Hristova",
@@ -89,10 +71,10 @@ with col1:
         - 75.8% increase in homeless population
         - Only 67.8% increase in shelter capacity
         - 9 food banks, 6 shelters, 5 support centers mapped
-        - Service gap zones identified across LA County
+        - ML-powered predictive analysis of high-need areas
         
-        **Skills Demonstrated:** GIS analysis, temporal trends, ML predictive modeling,
-        data visualization, interactive decision support tools
+        **Skills Demonstrated:** GIS analysis, temporal trends, Random Forest ML modeling,
+        interactive decision support, data visualization
         """)
         if st.button("View Full Analysis →", key="homeless", use_container_width=True):
             st.switch_page("pages/1_Homeless_Resources.py")
@@ -140,15 +122,3 @@ for complex real-world problems, from disaster response to community planning.
 **Want to connect?** Reach out on [LinkedIn](https://linkedin.com/in/luba-hristova) or 
 check out the code on [GitHub](https://github.com/hristova022/gis-portfolio).
 """)
-'''
-
-with open('streamlit_app.py', 'w') as f:
-    f.write(clean_homepage)
-
-!git add streamlit_app.py
-!git commit -m "Fix: Restore clean homepage"
-!git push
-
-print("\n✅ Homepage fixed!")
-print("\nYour app should be working now")
-print("Check: https://hristova022-gis-portfolio-streamlit-app-dvsj0a.streamlit.app")
