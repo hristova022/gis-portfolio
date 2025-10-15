@@ -546,11 +546,118 @@ with col_w2:
 
 st.divider()
 
+# DETAILED METHODOLOGY SECTION
+st.markdown("## 📊 Methodology & Data Sources")
+st.markdown("*How this analysis was conducted and how you can verify the data*")
+
+tab1, tab2, tab3, tab4 = st.tabs(["📥 Data Collection", "🔬 Analysis Process", "🤖 AI/ML Models", "✅ Verification"])
+
+with tab1:
+    st.markdown("""
+    ### Data Collection Methods
+    
+    **Primary Geospatial Data:**
+    - **OpenStreetMap** - [openstreetmap.org](https://www.openstreetmap.org/) - Community-maintained global database
+    - **Manual Verification** - Cross-referenced with [LAHSA](https://www.lahsa.org/) and [211 LA County](https://211la.org/)
+    - **Historical Homeless Count** - [LAHSA Point-in-Time Count](https://www.lahsa.org/data) (2015-2024)
+    
+    **Query Method:**
+    - Used Overpass API to query facilities tagged as shelters, food banks, and social facilities
+    - Region: LA County (33.70°N to 34.35°N, -118.67°W to -118.05°W)
+    - Added 20 manually verified major facilities
+    
+    **Last Updated:** October 2025
+    """)
+
+with tab2:
+    st.markdown("""
+    ### Analysis Process
+    
+    **1. Spatial Analysis (GIS)**
+    - Grid-based coverage: 380 zones across LA County (~20x19 grid)
+    - Service density calculation per zone
+    - Distance analysis using Euclidean distance (1 mile = walking threshold)
+    - Gap identification: areas >1 mile from nearest service
+    
+    **2. Temporal Trend Analysis**
+    - Historical comparison 2015-2025
+    - Per-capita metrics (beds per 100 homeless individuals)
+    - Gap calculation: Homeless growth % - Shelter capacity growth %
+    - Linear projection for 2027 forecast
+    
+    **3. Tools Used**
+    - Python: GeoPandas, Pandas, NumPy
+    - Visualization: Streamlit, Pydeck, Plotly
+    - Processing: Google Colab
+    """)
+
+with tab3:
+    st.markdown("""
+    ### AI/ML Predictive Models
+    
+    **Predictive Need Assessment Model:**
+    - **Algorithm:** Random Forest Regressor
+    - **Purpose:** Identify areas with highest service need
+    - **Features Analyzed (6):**
+      1. Distance to nearest service
+      2. Count of nearby facilities (within 2 miles)
+      3. Distance to nearest shelter
+      4. Distance to nearest food bank
+      5. Population density (simulated from Census patterns)
+      6. Poverty rate (demographic indicators)
+    
+    **Model Performance:**
+    - Trained on 2,500 grid points across LA County
+    - Predictions normalized to 0-100 scale
+    - Risk levels: Low (0-33), Medium (33-66), High (66-100)
+    
+    **What-If Scenario Tool:**
+    - Interactive decision support system
+    - Uses Nominatim geocoder for address lookup
+    - Real-time coverage impact calculation
+    - Allows testing of new facility placements
+    """)
+
+with tab4:
+    st.markdown("""
+    ### Verification & Reproducibility
+    
+    **How to Verify:**
+    1. **Check Raw Data** - [GitHub Repository](https://github.com/hristova022/gis-portfolio/tree/main/data)
+    2. **Reproduce Analysis** - All Colab notebooks available in `/notebooks` folder
+    3. **Cross-Reference** - Compare with [LAHSA Provider Directory](https://www.lahsa.org/portal/apps/la-hop/)
+    4. **Validate Numbers** - [LAHSA Data Portal](https://www.lahsa.org/data)
+    
+    **Known Limitations:**
+    - OSM completeness varies (mitigated with manual verification)
+    - Service hours not included
+    - Capacity vs availability (shows total beds, not current availability)
+    - Straight-line distance (not actual walking routes)
+    - Historical facility data estimated using sampling for pre-2020
+    
+    **Academic References:**
+    - Spatial Accessibility: Luo & Wang (2003) - Two-step floating catchment
+    - Service Gap Analysis: Guagliardo (2004) - Spatial accessibility methods
+    - Urban Planning: APA walkability standards (¼ to ½ mile)
+    
+    **Contact:**
+    - GitHub: [@hristova022](https://github.com/hristova022/gis-portfolio)
+    - LinkedIn: [Luba Hristova](https://linkedin.com/in/luba-hristova)
+    """)
+
+st.divider()
+
 st.markdown('''
 ### 💡 Key Takeaways
 
 This analysis reveals **LA County's homeless crisis is growing faster than our ability to provide services.** 
 While we've made progress adding facilities, the gap between need and capacity continues to widen.
+
+**Analysis Highlights:**
+- 🤖 **AI Predictive Model** identifies high-need areas using 6 spatial features
+- 🎯 **What-If Tool** enables testing of new facility placement scenarios
+- 📊 **Temporal Trends** show 75.8% homeless growth vs 67.8% capacity growth
+- 🗺️ **Geographic Gaps** reveal areas 1+ miles from any service
 
 **What this means:**
 - More people competing for fewer resources
@@ -559,7 +666,8 @@ While we've made progress adding facilities, the gap between need and capacity c
 - Growing service gap areas where no help is available nearby
 
 **What we need:**
-- Strategic placement of new facilities in underserved areas
+- Strategic placement guided by AI predictions in underserved areas
 - Increased capacity at existing locations
 - Coordinated regional approach across all LA County cities
+- Data-driven decision support for resource allocation
 ''')
