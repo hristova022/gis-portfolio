@@ -352,26 +352,24 @@ with col_w1:
                 if results:
                     st.session_state.temp_lat = float(results[0]['lat'])
                     st.session_state.temp_lon = float(results[0]['lon'])
-                    st.success(f"✓ Location found!")
+                    st.success(f"✓ Location found: {st.session_state.temp_lat:.4f}, {st.session_state.temp_lon:.4f}")
                 else:
                     st.error("Address not found. Try being more specific.")
-            except:
-                st.error("Geocoding failed. Try coordinates instead.")
+            except Exception as e:
+                st.error(f"Geocoding failed: {str(e)}")
         
-        if 'temp_lat' in st.session_state:
-            st.caption(f"📍 {st.session_state.temp_lat:.4f}, {st.session_state.temp_lon:.4f}")
-            new_lat = st.session_state.temp_lat
-            new_lon = st.session_state.temp_lon
-        else:
-            new_lat = 34.05
-            new_lon = -118.25
-    else:
+        # Display found coordinates
+        if 'temp_lat' in st.session_state and 'temp_lon' in st.session_state:
+            st.caption(f"📍 Selected: {st.session_state.temp_lat:.4f}, {st.session_state.temp_lon:.4f}")
+    
+    # Coordinate inputs (shown for manual mode)
+    if not use_address:
         col_a, col_b = st.columns(2)
         with col_a:
-            new_lat = st.number_input("Latitude", min_value=33.70, max_value=34.35, 
+            manual_lat = st.number_input("Latitude", min_value=33.70, max_value=34.35, 
                                      value=34.05, step=0.01, key="manual_lat_input")
         with col_b:
-            new_lon = st.number_input("Longitude", min_value=-118.67, max_value=-118.05, 
+            manual_lon = st.number_input("Longitude", min_value=-118.67, max_value=-118.05, 
                                      value=-118.25, step=0.01, key="manual_lon_input")
     
     new_type = st.selectbox("Facility Type", ["shelter", "food_bank", "social_facility"], 
@@ -384,16 +382,34 @@ with col_w1:
     
     with col_add:
         if st.button("➕ Add Facility", use_container_width=True, key="add_hypo_facility"):
+            # Determine which coordinates to use
+            if use_address and 'temp_lat' in st.session_state and 'temp_lon' in st.session_state:
+                final_lat = st.session_state.temp_lat
+                final_lon = st.session_state.temp_lon
+            elif not use_address:
+                final_lat = manual_lat
+                final_lon = manual_lon
+            else:
+                st.error("Please search for an address first!")
+                st.stop()
+            
             st.session_state.hypothetical_facilities.append({
-                'lat': new_lat,
-                'lon': new_lon,
+                'lat': final_lat,
+                'lon': final_lon,
                 'type': new_type,
                 'name': f'Hypothetical {new_type.replace("_", " ").title()}',
                 'city': 'Proposed',
-                'address': f'{new_lat:.3f}, {new_lon:.3f}',
+                'address': f'{final_lat:.4f}, {final_lon:.4f}',
                 'hypothetical': True
             })
-            st.success("✓ Facility added!")
+            st.success(f"✓ Facility added at {final_lat:.4f}, {final_lon:.4f}")
+            
+            # Clear temp coordinates after adding
+            if 'temp_lat' in st.session_state:
+                del st.session_state.temp_lat
+            if 'temp_lon' in st.session_state:
+                del st.session_state.temp_lon
+            
             st.rerun()
     
     with col_clear:
@@ -401,6 +417,10 @@ with col_w1:
                     disabled=len(st.session_state.hypothetical_facilities)==0,
                     key="clear_hypo_facilities"):
             st.session_state.hypothetical_facilities = []
+            if 'temp_lat' in st.session_state:
+                del st.session_state.temp_lat
+            if 'temp_lon' in st.session_state:
+                del st.session_state.temp_lon
             st.rerun()
     
     if len(st.session_state.hypothetical_facilities) > 0:
