@@ -307,7 +307,7 @@ with tab3:
             
             # Check if files exist
             orig_exists = os.path.exists(f'data/{area_file}_aerial.png')
-            detect_exists = os_path.exists(f'data/{area_file}_detected.png')
+            detect_exists = os.path.exists(f'data/{area_file}_detected.png')
             
             if orig_exists or detect_exists:
                 tab_orig, tab_detect = st.tabs(["📸 Satellite Image", "🤖 Vehicle Detection"])
