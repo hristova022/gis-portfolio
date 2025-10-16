@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 import pydeck as pdk
 
 st.set_page_config(page_title="Long Beach Parking Analysis", page_icon="🅿️", layout="wide")
@@ -268,7 +269,7 @@ with tab3:
     
     try:
         # Load detection results
-        import os as os_check
+        # os is already imported at top
         df_results = pd.read_csv('data/parking_detection_results.csv')
         
         st.success(f"✅ Analysis complete for {len(df_results)} neighborhoods using high-resolution satellite imagery")
@@ -305,8 +306,7 @@ with tab3:
             st.markdown(f"### {selected_area}")
             
             # Check if files exist
-            import os as os_path
-            orig_exists = os_path.exists(f'data/{area_file}_aerial.png')
+            orig_exists = os.path.exists(f'data/{area_file}_aerial.png')
             detect_exists = os_path.exists(f'data/{area_file}_detected.png')
             
             if orig_exists or detect_exists:
