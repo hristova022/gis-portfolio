@@ -181,11 +181,11 @@ with tab2:
                 df_struct['color'] = [[255, 140, 0, 220]] * len(df_struct)
                 df_lots['color'] = [[100, 200, 100, 200]] * len(df_lots)
                 
-                layers = []
+                map_layers = []
                 
                 if len(df_struct) > 0:
                     # Parking structures - larger icons
-                    layers.append(pdk.Layer(
+                    map_layers.append(pdk.Layer(
                         'ScatterplotLayer',
                         data=df_struct,
                         get_position='[lon, lat]',
@@ -202,7 +202,7 @@ with tab2:
                 
                 if len(df_lots) > 0:
                     # Surface lots - smaller squares
-                    layers.append(pdk.Layer(
+                    map_layers.append(pdk.Layer(
                         'ScatterplotLayer',
                         data=df_lots,
                         get_position='[lon, lat]',
@@ -214,8 +214,6 @@ with tab2:
                         filled=True
                     ))
                 
-                layer = layers[0] if len(layers) == 1 else layers
-                
                 view_state = pdk.ViewState(
                     latitude=33.77,
                     longitude=-118.19,
@@ -224,7 +222,7 @@ with tab2:
                 )
                 
                 deck = pdk.Deck(
-                    layers=layers if isinstance(layers, list) else [layer],
+                    layers=map_layers,
                     initial_view_state=view_state,
                     tooltip={
                         'html': '<b>{name}</b><br/>{neighborhood}<br/>Capacity: {capacity}<br/>Rate: {rate}',
