@@ -65,7 +65,7 @@ with tab1:
     st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
     
     try:
-        df_sweeping = pd.read_csv('data/street_sweeping_accurate.csv')
+        df_sweeping = pd.read_json('data/street_sweeping_lines.json')
         
         col_map, col_schedule = st.columns([2, 1])
         
@@ -84,16 +84,17 @@ with tab1:
                 df_display = df_sweeping[df_sweeping['day'] == selected_day]
             
             if len(df_display) > 0:
-                # Smaller, more realistic markers
+                # Use line segments to show actual streets
                 layer = pdk.Layer(
-                    'ScatterplotLayer',
+                    'PathLayer',
                     data=df_display,
-                    get_position='[lon, lat]',
+                    get_path='path',
                     get_color='color',
-                    get_radius=80,  # Much smaller
-                    radius_min_pixels=3,
-                    radius_max_pixels=8,
-                    pickable=True
+                    get_width=40,
+                    width_min_pixels=3,
+                    width_max_pixels=8,
+                    pickable=True,
+                    auto_highlight=True
                 )
                 
                 view_state = pdk.ViewState(
@@ -104,7 +105,7 @@ with tab1:
                 )
                 
                 deck = pdk.Deck(
-                    layers=[layer],
+                    layers=layers if isinstance(layers, list) else [layer],
                     initial_view_state=view_state,
                     tooltip={
                         'html': '<b>{neighborhood}</b><br/>{day} {time}',
@@ -113,7 +114,7 @@ with tab1:
                 )
                 
                 st.pydeck_chart(deck)
-                st.caption(f"Showing {len(df_display)} street blocks affected by sweeping")
+                st.caption(f"🔴 Red = Monday | 🔵 Blue = Tuesday | 🟢 Green = Wednesday | 🟠 Orange = Thursday | 🟣 Purple = Friday | Lines show actual streets where sweeping occurs")
             else:
                 st.info(f"No sweeping on {selected_day}")
         
@@ -173,16 +174,47 @@ with tab2:
                     lambda x: [255, 140, 0, 200] if x == 'structure' else [100, 200, 100, 200]
                 )
                 
-                layer = pdk.Layer(
-                    'ScatterplotLayer',
-                    data=df_structures,
-                    get_position='[lon, lat]',
-                    get_color='color',
-                    get_radius=150,
-                    radius_min_pixels=8,
-                    radius_max_pixels=25,
-                    pickable=True
-                )
+                # Create two layers - one for structures (larger) and one for lots (smaller)
+                df_struct = df_structures[df_structures['type'] == 'structure'].copy()
+                df_lots = df_structures[df_structures['type'] == 'lot'].copy()
+                
+                df_struct['color'] = [[255, 140, 0, 220]] * len(df_struct)
+                df_lots['color'] = [[100, 200, 100, 200]] * len(df_lots)
+                
+                layers = []
+                
+                if len(df_struct) > 0:
+                    # Parking structures - larger icons
+                    layers.append(pdk.Layer(
+                        'ScatterplotLayer',
+                        data=df_struct,
+                        get_position='[lon, lat]',
+                        get_color='color',
+                        get_radius=250,
+                        radius_min_pixels=15,
+                        radius_max_pixels=40,
+                        pickable=True,
+                        filled=True,
+                        stroked=True,
+                        get_line_color=[255, 255, 255],
+                        line_width_min_pixels=2
+                    ))
+                
+                if len(df_lots) > 0:
+                    # Surface lots - smaller squares
+                    layers.append(pdk.Layer(
+                        'ScatterplotLayer',
+                        data=df_lots,
+                        get_position='[lon, lat]',
+                        get_color='color',
+                        get_radius=150,
+                        radius_min_pixels=10,
+                        radius_max_pixels=25,
+                        pickable=True,
+                        filled=True
+                    ))
+                
+                layer = layers[0] if len(layers) == 1 else layers
                 
                 view_state = pdk.ViewState(
                     latitude=33.77,
@@ -192,7 +224,7 @@ with tab2:
                 )
                 
                 deck = pdk.Deck(
-                    layers=[layer],
+                    layers=layers if isinstance(layers, list) else [layer],
                     initial_view_state=view_state,
                     tooltip={
                         'html': '<b>{name}</b><br/>{neighborhood}<br/>Capacity: {capacity}<br/>Rate: {rate}',
@@ -201,7 +233,7 @@ with tab2:
                 )
                 
                 st.pydeck_chart(deck)
-                st.caption("🟠 Orange = Parking Structure | 🟢 Green = Surface Lot")
+                st.caption("🟠 Large orange circles = Multi-level parking structures | 🟢 Smaller green circles = Surface parking lots | Hover for details")
             
             with col2:
                 st.markdown("### Summary")
