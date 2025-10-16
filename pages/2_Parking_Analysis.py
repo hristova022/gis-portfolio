@@ -110,7 +110,7 @@ with tab1:
                 )
                 
                 deck = pdk.Deck(
-                    map_style='mapbox://styles/mapbox/light-v11',
+                    map_style='mapbox://styles/mapbox/streets-v12',
                     layers=[sweep_layer],
                     initial_view_state=view_state,
                     tooltip={
