@@ -50,17 +50,85 @@ with tab1:
     
     with col_b:
         st.markdown("### Analysis Status")
-        st.progress(0.3, text="Data collection: 30%")
+        st.progress(0.6, text="Data collection: 60%")
         st.caption("✅ Imagery acquired")
-        st.caption("⏳ Training detection model")
-        st.caption("⏳ Running analysis")
-        st.caption("⏳ Building visualizations")
+        st.caption("✅ Structure data mapped")
+        st.caption("✅ Street sweeping zones")
+        st.caption("⏳ Running AI analysis")
 
 with tab2:
     st.markdown("## Street Sweeping Impact")
     st.markdown("When entire blocks lose parking simultaneously")
     
     st.warning("⚠️ Street sweeping removes approximately 800 parking spaces citywide on sweep days")
+    
+    try:
+        df_sweeping = pd.read_csv('data/street_sweeping_zones.csv')
+        
+        col_map, col_schedule = st.columns([2, 1])
+        
+        with col_map:
+            st.markdown("### Sweeping Zones by Day")
+            
+            selected_day = st.selectbox(
+                "Select day to view sweeping zones",
+                ['All Days', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                key="sweep_day_selector"
+            )
+            
+            if selected_day == 'All Days':
+                df_display = df_sweeping
+            else:
+                df_display = df_sweeping[df_sweeping['day'] == selected_day]
+            
+            if len(df_display) > 0:
+                layer = pdk.Layer(
+                    'ScatterplotLayer',
+                    data=df_display,
+                    get_position='[lon, lat]',
+                    get_color='color',
+                    get_radius=800,
+                    radius_min_pixels=20,
+                    radius_max_pixels=60,
+                    pickable=True
+                )
+                
+                view_state = pdk.ViewState(
+                    latitude=33.77,
+                    longitude=-118.19,
+                    zoom=11.5,
+                    pitch=0
+                )
+                
+                deck = pdk.Deck(
+                    layers=[layer],
+                    initial_view_state=view_state,
+                    tooltip={
+                        'html': '<b>{name}</b><br/>{day}<br/>{time}',
+                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                    }
+                )
+                
+                st.pydeck_chart(deck)
+                st.caption("🔴 Red = Mon/Thu | 🔵 Blue = Tue/Fri | 🟢 Green = Wed | 🟠 Orange = Mon/Thu alt | 🟣 Purple = Tue alt")
+            else:
+                st.info(f"No sweeping zones on {selected_day}")
+        
+        with col_schedule:
+            st.markdown("### Weekly Schedule")
+            
+            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
+                day_data = df_sweeping[df_sweeping['day'] == day]
+                if len(day_data) > 0:
+                    with st.expander(f"**{day}** ({len(day_data)} zones)", expanded=(selected_day==day)):
+                        for _, zone in day_data.iterrows():
+                            st.write(f"• {zone['name']}")
+                            st.caption(f"  {zone['time']}")
+    
+    except FileNotFoundError:
+        st.warning("Sweeping zone data loading...")
+    
+    st.divider()
     
     col1, col2 = st.columns(2)
     
@@ -108,7 +176,6 @@ with tab3:
     st.markdown("## Parking Structure Analysis")
     st.markdown("Where is covered parking actually available?")
     
-    # Load real parking structure data
     try:
         df_structures = pd.read_csv('data/parking_structures.csv')
         
@@ -118,11 +185,9 @@ with tab3:
             col1, col2 = st.columns([2, 1])
             
             with col1:
-                # Create interactive map
                 st.markdown("### Structure Locations")
                 
-                # Prepare data for map
-                df_structures['color'] = [[255, 140, 0, 200]] * len(df_structures)  # Orange
+                df_structures['color'] = [[255, 140, 0, 200]] * len(df_structures)
                 
                 layer = pdk.Layer(
                     'ScatterplotLayer',
@@ -157,13 +222,7 @@ with tab3:
             with col2:
                 st.markdown("### Summary Stats")
                 
-                total_known_capacity = df_structures[df_structures['capacity'] != 'Unknown']['capacity'].apply(
-                    lambda x: int(x) if str(x).isdigit() else 0
-                ).sum()
-                
                 st.metric("Total Structures", len(df_structures))
-                if total_known_capacity > 0:
-                    st.metric("Known Capacity", f"{total_known_capacity:,} spaces")
                 
                 fee_count = len(df_structures[df_structures['fee'] == 'yes'])
                 st.metric("Paid Parking", fee_count)
@@ -171,7 +230,6 @@ with tab3:
                 st.markdown("---")
                 st.markdown("### Top Structures")
                 
-                # Show top structures by capacity
                 df_display = df_structures[['name', 'capacity', 'fee']].copy()
                 df_display.columns = ['Name', 'Capacity', 'Fee']
                 st.dataframe(df_display.head(10), hide_index=True, use_container_width=True)
@@ -179,11 +237,9 @@ with tab3:
             st.warning("No structure data found")
     
     except FileNotFoundError:
-        st.warning("Structure data not yet loaded - processing...")
+        st.warning("Structure data not yet loaded")
     
     st.divider()
-    
-    st.markdown("""    st.divider()
     
     st.markdown("""
     ### Key Findings
@@ -256,16 +312,10 @@ st.markdown("""
 - Identify chronic shortage zones
 
 **Interactive Tools**
-- Street sweeping schedule overlay map
 - "Best time to find parking" predictor by neighborhood
 - Walking distance calculator from structures
 - What-if scenario builder for new parking solutions
-
-**Impact Assessment**
-- Economic cost to residents (time + tickets)
-- Environmental impact (cars circling for spots)
-- Equity analysis (who can afford structures vs street parking)
-- Recommendations for policymakers
+- Real-time availability dashboard (future integration)
 """)
 
 st.divider()
