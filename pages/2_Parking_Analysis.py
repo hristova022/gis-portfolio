@@ -85,7 +85,7 @@ with tab1:
             
             if len(df_display) > 0:
                 # Use line segments to show actual streets
-                layer = pdk.Layer(
+                sweep_layer = pdk.Layer(
                     'PathLayer',
                     data=df_display,
                     get_path='path',
@@ -105,7 +105,7 @@ with tab1:
                 )
                 
                 deck = pdk.Deck(
-                    layers=map_layers,
+                    layers=[sweep_layer],
                     initial_view_state=view_state,
                     tooltip={
                         'html': '<b>{neighborhood}</b><br/>{day} {time}',
