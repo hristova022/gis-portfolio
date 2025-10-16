@@ -56,7 +56,7 @@ except:
 st.divider()
 
 # Main tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🎫 Parking Tickets", "📊 By Neighborhood"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🛰️ Aerial Imagery", "🎫 Parking Tickets", "📊 By Neighborhood"])
 
 with tab1:
     st.markdown("## Street Sweeping Impact")
@@ -264,6 +264,148 @@ with tab2:
 
 
 with tab3:
+    st.markdown("## Aerial Imagery Analysis")
+    st.markdown("**Satellite imagery and vehicle detection for Long Beach**")
+    
+    try:
+        # Load detection results
+        import os
+        df_results = pd.read_csv('data/parking_detection_results.csv')
+        
+        st.success(f"✅ Analysis complete for {len(df_results)} neighborhoods using high-resolution satellite imagery")
+        
+        # Summary metrics
+        col1, col2, col3 = st.columns(3)
+        
+        total_vehicles = df_results['vehicles_detected'].sum()
+        avg_occupancy = df_results['occupancy_rate'].mean()
+        
+        with col1:
+            st.metric("Total Vehicles Detected", f"{total_vehicles:,}")
+        with col2:
+            st.metric("Average Occupancy", f"{avg_occupancy:.1f}%")
+        with col3:
+            st.metric("Areas Analyzed", len(df_results))
+        
+        st.divider()
+        
+        # Area selector
+        area_names = df_results['area'].tolist()
+        selected_area = st.selectbox(
+            "Select neighborhood to view",
+            area_names,
+            key="aerial_area_select"
+        )
+        
+        area_data = df_results[df_results['area'] == selected_area].iloc[0]
+        area_file = selected_area.lower().replace(' ', '_')
+        
+        col_img, col_stats = st.columns([2, 1])
+        
+        with col_img:
+            st.markdown(f"### {selected_area}")
+            
+            # Check if files exist
+            orig_exists = os.path.exists(f'data/{area_file}_aerial.png')
+            detect_exists = os.path.exists(f'data/{area_file}_detected.png')
+            
+            if orig_exists or detect_exists:
+                tab_orig, tab_detect = st.tabs(["📸 Satellite Image", "🤖 Vehicle Detection"])
+                
+                with tab_orig:
+                    if orig_exists:
+                        st.image(f'data/{area_file}_aerial.png', 
+                                caption=f"High-resolution NAIP satellite imagery of {selected_area}",
+                                use_container_width=True)
+                    else:
+                        st.warning("Original imagery not available")
+                
+                with tab_detect:
+                    if detect_exists:
+                        st.image(f'data/{area_file}_detected.png',
+                                caption=f"Vehicle detection using computer vision (YOLO model)",
+                                use_container_width=True)
+                        st.caption("🟦 Blue boxes = Detected vehicles")
+                    else:
+                        st.warning("Detection results not available")
+            else:
+                st.warning("Imagery files not found")
+        
+        with col_stats:
+            st.markdown("### Detection Results")
+            
+            st.metric("Vehicles Found", int(area_data['vehicles_detected']))
+            st.metric("Estimated Spaces", int(area_data['estimated_spaces']))
+            st.metric("Occupancy Rate", f"{area_data['occupancy_rate']:.1f}%",
+                     delta=f"{area_data['occupancy_rate'] - avg_occupancy:.1f}% vs avg",
+                     delta_color="inverse")
+            
+            st.markdown("---")
+            st.markdown("### Technical Details")
+            st.caption(f"**Image Size:** {area_data['image_size']}")
+            st.caption(f"**Data Source:** USDA NAIP Imagery")
+            st.caption(f"**Detection:** YOLOv8 (COCO dataset)")
+            st.caption(f"**Coverage:** ~500m radius")
+            st.caption(f"**Resolution:** High-res satellite")
+            
+            st.markdown("---")
+            st.markdown("### How It Works")
+            st.caption("""
+            1. Download satellite imagery from NAIP
+            2. Run vehicle detection model
+            3. Count detected vehicles
+            4. Estimate parking occupancy
+            5. Compare across neighborhoods
+            """)
+        
+        st.divider()
+        
+        # Comparison table
+        st.markdown("### Comparison Across All Areas")
+        
+        # Format the dataframe for display
+        display_df = df_results.copy()
+        display_df['occupancy_rate'] = display_df['occupancy_rate'].apply(lambda x: f"{x:.1f}%")
+        display_df.columns = ['Area', 'Vehicles Detected', 'Est. Spaces', 'Occupancy', 'Image Size']
+        
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        st.divider()
+        
+        st.markdown("""
+        ### Limitations & Future Work
+        
+        **Current Limitations:**
+        - Static imagery from one point in time (not real-time)
+        - Vehicle detection doesn't distinguish parked vs moving cars
+        - Aerial view makes it hard to detect cars under trees or in structures
+        - Occupancy estimates are approximations based on visible spaces
+        
+        **Future Improvements:**
+        - Time-series analysis (compare morning vs evening)
+        - Integration with real-time parking data
+        - Better detection models trained specifically on parking
+        - Include parking structure capacity in analysis
+        """)
+        
+    except FileNotFoundError:
+        st.warning("⚠️ Detection results not found. Analysis may still be processing.")
+        st.info("""
+        **About This Analysis**
+        
+        This section uses satellite imagery and computer vision to:
+        - Detect vehicles in aerial photos
+        - Estimate parking occupancy rates
+        - Compare parking availability across neighborhoods
+        - Provide visual evidence of the parking crisis
+        
+        Data processing in progress...
+        """)
+    except Exception as e:
+        st.error(f"Error loading imagery: {str(e)}")
+
+with tab5:
+with tab3:
     st.markdown("## Parking Ticket Analysis")
     st.markdown("**Following the money: who pays the price?**")
     
@@ -349,7 +491,7 @@ with tab3:
     except:
         st.warning("Loading ticket data...")
 
-with tab4:
+with tab5:
     st.markdown("## Neighborhood Breakdown")
     st.markdown("**Which areas have it worst?**")
     
