@@ -1,0 +1,4 @@
+area,vehicles_detected,estimated_spaces,occupancy_rate,image_size
+Downtown,0,10000,0.0,1023x1024
+Belmont Shore,0,10000,0.0,1023x1024
+Bixby Knolls,0,10000,0.0,1023x1024
