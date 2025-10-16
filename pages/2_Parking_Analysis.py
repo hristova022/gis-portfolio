@@ -55,7 +55,8 @@ except:
 
 st.divider()
 
-# Main tabs
+
+# Main tabs - now with 5 tabs including Aerial Imagery
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🛰️ Aerial Imagery", "🎫 Parking Tickets", "📊 By Neighborhood"])
 
 with tab1:
@@ -151,7 +152,6 @@ with tab1:
     **The Result:** Over 118,000 street sweeping tickets issued in 2024 alone. That's $8 million from residents who 
     often had no other legal place to park their car.
     """)
-
 
 with tab2:
     st.markdown("## Parking Structure Locations")
@@ -250,8 +250,8 @@ with tab2:
         
         st.divider()
         
-        st.markdown("### The Reality")
         st.markdown("""
+        ### The Reality
         - **Downtown has the most structures** (5 facilities, 1,850 spaces) but also the highest demand
         - **Belmont Shore has only 2 small lots** (330 spaces) for one of the busiest areas
         - **Many neighborhoods have ZERO parking structures** - residents rely entirely on street parking
@@ -262,14 +262,13 @@ with tab2:
     except FileNotFoundError:
         st.warning("Loading structure data...")
 
-
 with tab3:
     st.markdown("## Aerial Imagery Analysis")
     st.markdown("**Satellite imagery and vehicle detection for Long Beach**")
     
     try:
         # Load detection results
-        import os
+        import os as os_check
         df_results = pd.read_csv('data/parking_detection_results.csv')
         
         st.success(f"✅ Analysis complete for {len(df_results)} neighborhoods using high-resolution satellite imagery")
@@ -306,8 +305,9 @@ with tab3:
             st.markdown(f"### {selected_area}")
             
             # Check if files exist
-            orig_exists = os.path.exists(f'data/{area_file}_aerial.png')
-            detect_exists = os.path.exists(f'data/{area_file}_detected.png')
+            import os as os_path
+            orig_exists = os_path.exists(f'data/{area_file}_aerial.png')
+            detect_exists = os_path.exists(f'data/{area_file}_detected.png')
             
             if orig_exists or detect_exists:
                 tab_orig, tab_detect = st.tabs(["📸 Satellite Image", "🤖 Vehicle Detection"])
@@ -346,7 +346,6 @@ with tab3:
             st.caption(f"**Data Source:** USDA NAIP Imagery")
             st.caption(f"**Detection:** YOLOv8 (COCO dataset)")
             st.caption(f"**Coverage:** ~500m radius")
-            st.caption(f"**Resolution:** High-res satellite")
             
             st.markdown("---")
             st.markdown("### How It Works")
@@ -370,42 +369,14 @@ with tab3:
         
         st.dataframe(display_df, use_container_width=True, hide_index=True)
         
-        st.divider()
-        
-        st.markdown("""
-        ### Limitations & Future Work
-        
-        **Current Limitations:**
-        - Static imagery from one point in time (not real-time)
-        - Vehicle detection doesn't distinguish parked vs moving cars
-        - Aerial view makes it hard to detect cars under trees or in structures
-        - Occupancy estimates are approximations based on visible spaces
-        
-        **Future Improvements:**
-        - Time-series analysis (compare morning vs evening)
-        - Integration with real-time parking data
-        - Better detection models trained specifically on parking
-        - Include parking structure capacity in analysis
-        """)
-        
     except FileNotFoundError:
-        st.warning("⚠️ Detection results not found. Analysis may still be processing.")
-        st.info("""
-        **About This Analysis**
-        
-        This section uses satellite imagery and computer vision to:
-        - Detect vehicles in aerial photos
-        - Estimate parking occupancy rates
-        - Compare parking availability across neighborhoods
-        - Provide visual evidence of the parking crisis
-        
-        Data processing in progress...
-        """)
+        st.warning("⚠️ Detection results not found")
     except Exception as e:
-        st.error(f"Error loading imagery: {str(e)}")
+        st.error(f"Error: {str(e)}")
+
+# Continue with tab4 and tab5 from the original file...
 
 with tab5:
-with tab3:
     st.markdown("## Parking Ticket Analysis")
     st.markdown("**Following the money: who pays the price?**")
     
@@ -584,6 +555,7 @@ with tab5:
         
     except:
         st.warning("Loading neighborhood data...")
+
 
 st.divider()
 
