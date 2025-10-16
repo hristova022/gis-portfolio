@@ -5,12 +5,53 @@ import pydeck as pdk
 st.set_page_config(page_title="Long Beach Parking Analysis", page_icon="🅿️", layout="wide")
 
 st.title("🅿️ Long Beach Parking Crisis Analysis")
-st.subheader("AI-Powered Parking Availability Analysis from Aerial Imagery")
+st.subheader("A Data-Driven Look at Why Finding Parking Feels Impossible")
 
-st.markdown("""
-**Analyzing parking scarcity in Long Beach using satellite imagery, street sweeping data, 
-and parking infrastructure mapping.**
-""")
+# Personal context box
+with st.container():
+    st.markdown("""
+    ### Why This Analysis Matters
+    
+    As a Long Beach resident, I experience the parking crisis daily. Like many residents, I've:
+    - Circled blocks for 20+ minutes looking for a spot
+    - Received parking tickets despite following the rules
+    - Missed appointments because I couldn't find parking
+    - Paid for expensive garage parking when street parking wasn't available
+    
+    **This isn't just inconvenient—it's expensive.** Long Beach issues over **230,000 parking tickets annually**, 
+    generating approximately **$15.6 million in revenue**. About half of these tickets are for street sweeping violations, 
+    where residents simply had nowhere else to park.
+    
+    This analysis uses real data to show what every Long Beach resident already knows: 
+    **we have a serious parking problem that needs solutions, not just more tickets.**
+    """)
+
+st.divider()
+
+# Load ticket data for hero stats
+try:
+    df_tickets = pd.read_csv('data/parking_tickets_longbeach.csv')
+    latest_year = df_tickets.iloc[-1]
+    total_5yr = df_tickets['total_tickets'].sum()
+    
+    st.markdown("### The Numbers Tell the Story")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Annual Parking Tickets", f"{latest_year['total_tickets']:,}", 
+                 help="Total parking citations issued in 2024")
+    with col2:
+        st.metric("Street Sweeping Tickets", f"{latest_year['street_sweeping']:,}",
+                 help="Half of all tickets are for street sweeping")
+    with col3:
+        st.metric("5-Year Total", f"{total_5yr/1000:.0f}K tickets",
+                 delta=f"+{((latest_year['total_tickets']/df_tickets.iloc[0]['total_tickets'])-1)*100:.0f}% since 2020",
+                 delta_color="inverse")
+    with col4:
+        st.metric("Est. Annual Revenue", f"${latest_year['total_tickets']*68/1000000:.1f}M",
+                 help="Based on $68 average ticket cost")
+except:
+    pass
 
 st.divider()
 
