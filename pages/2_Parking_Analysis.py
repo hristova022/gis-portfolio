@@ -108,30 +108,82 @@ with tab3:
     st.markdown("## Parking Structure Analysis")
     st.markdown("Where is covered parking actually available?")
     
-    structures_data = {
-        'Area': ['Downtown', 'Downtown', 'Downtown', 'Downtown', 
-                 'Belmont Shore', 'Belmont Shore', 'Bixby Knolls', 'Pike Outlets'],
-        'Structure': ['City Place', 'Broadway Center', 'Ocean Center', 'Metro Station',
-                     'Marina Lot', 'Shore Lot', 'Village Lot', 'Pike Garage'],
-        'Capacity': [450, 380, 320, 200, 180, 150, 120, 500],
-        'Peak Occupancy': ['95%', '90%', '92%', '85%', '98%', '95%', '88%', '75%'],
-        'Cost': ['$2/hr', '$2/hr', '$2/hr', 'Free 2hr', '$1/hr', '$1/hr', 'Free', '$3/hr']
-    }
+    # Load real parking structure data
+    try:
+        df_structures = pd.read_csv('data/parking_structures.csv')
+        
+        if len(df_structures) > 0:
+            st.success(f"📍 Found {len(df_structures)} parking structures in Long Beach")
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Create interactive map
+                st.markdown("### Structure Locations")
+                
+                # Prepare data for map
+                df_structures['color'] = [[255, 140, 0, 200]] * len(df_structures)  # Orange
+                
+                layer = pdk.Layer(
+                    'ScatterplotLayer',
+                    data=df_structures,
+                    get_position='[lon, lat]',
+                    get_color='color',
+                    get_radius=200,
+                    radius_min_pixels=8,
+                    radius_max_pixels=30,
+                    pickable=True
+                )
+                
+                view_state = pdk.ViewState(
+                    latitude=33.77,
+                    longitude=-118.19,
+                    zoom=12,
+                    pitch=0
+                )
+                
+                deck = pdk.Deck(
+                    layers=[layer],
+                    initial_view_state=view_state,
+                    tooltip={
+                        'html': '<b>{name}</b><br/>Capacity: {capacity}<br/>Fee: {fee}',
+                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                    }
+                )
+                
+                st.pydeck_chart(deck)
+                st.caption("🟠 Orange markers = Parking structures")
+            
+            with col2:
+                st.markdown("### Summary Stats")
+                
+                total_known_capacity = df_structures[df_structures['capacity'] != 'Unknown']['capacity'].apply(
+                    lambda x: int(x) if str(x).isdigit() else 0
+                ).sum()
+                
+                st.metric("Total Structures", len(df_structures))
+                if total_known_capacity > 0:
+                    st.metric("Known Capacity", f"{total_known_capacity:,} spaces")
+                
+                fee_count = len(df_structures[df_structures['fee'] == 'yes'])
+                st.metric("Paid Parking", fee_count)
+                
+                st.markdown("---")
+                st.markdown("### Top Structures")
+                
+                # Show top structures by capacity
+                df_display = df_structures[['name', 'capacity', 'fee']].copy()
+                df_display.columns = ['Name', 'Capacity', 'Fee']
+                st.dataframe(df_display.head(10), hide_index=True, use_container_width=True)
+        else:
+            st.warning("No structure data found")
     
-    df_structures = pd.DataFrame(structures_data)
-    
-    col1, col2 = st.columns([3, 2])
-    
-    with col1:
-        st.dataframe(df_structures, use_container_width=True, hide_index=True)
-    
-    with col2:
-        total_capacity = sum(structures_data['Capacity'])
-        st.metric("Total Structure Capacity", f"{total_capacity:,} spaces")
-        st.metric("Average Peak Occupancy", "89%")
-        st.metric("Areas Without Structures", "8+", delta="Major gaps", delta_color="inverse")
+    except FileNotFoundError:
+        st.warning("Structure data not yet loaded - processing...")
     
     st.divider()
+    
+    st.markdown("""    st.divider()
     
     st.markdown("""
     ### Key Findings
