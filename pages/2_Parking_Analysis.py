@@ -105,7 +105,7 @@ with tab1:
                 )
                 
                 deck = pdk.Deck(
-                    layers=layers if isinstance(layers, list) else [layer],
+                    layers=map_layers,
                     initial_view_state=view_state,
                     tooltip={
                         'html': '<b>{neighborhood}</b><br/>{day} {time}',
