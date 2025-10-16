@@ -80,6 +80,26 @@ with col1:
             st.switch_page("pages/1_Homeless_Resources.py")
     
     with st.container(border=True):
+        st.markdown("### 🅿️ Long Beach Parking Crisis Analysis")
+        st.markdown("""
+        **AI-powered analysis of parking scarcity in Long Beach**
+        
+        Using satellite imagery and computer vision to analyze parking availability,
+        combined with street sweeping schedules and infrastructure mapping.
+        
+        **Key Findings:**
+        - 800+ spaces lost on street sweeping days
+        - 89% average structure occupancy at peak times
+        - Belmont Shore worst area (98% occupancy weekends)
+        - AI detection model processing aerial imagery
+        
+        **Skills Demonstrated:** Computer vision, satellite imagery analysis, 
+        spatial statistics, municipal data analysis, interactive visualization
+        """)
+        if st.button("View Full Analysis →", key="parking", use_container_width=True):
+            st.switch_page("pages/2_Parking_Analysis.py")
+    
+    with st.container(border=True):
         st.markdown("### 🌊 Sea Level Rise Simulator")
         st.markdown("""
         Coastal flooding impact analysis with property risk assessment under 
