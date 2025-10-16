@@ -113,8 +113,8 @@ with tab1:
                     layers=[sweep_layer],
                     initial_view_state=view_state,
                     tooltip={
-                        'html': '<b>{name}</b><br/>{days}<br/>{time}',
-                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                        'html': '<b>{name}</b><br/>{days} {time}<br/><i>{streets}</i>',
+                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px', 'fontSize': '13px'}
                     }
                 )
                 
