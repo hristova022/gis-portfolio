@@ -65,7 +65,7 @@ with tab1:
     st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
     
     try:
-        df_sweeping = pd.read_json('data/street_sweeping_lines.json')
+        df_sweeping = pd.read_json('data/street_sweeping_zones_polygons.json')
         
         col_map, col_schedule = st.columns([2, 1])
         
@@ -86,13 +86,14 @@ with tab1:
             if len(df_display) > 0:
                 # Use line segments to show actual streets
                 sweep_layer = pdk.Layer(
-                    'PathLayer',
+                    'PolygonLayer',
                     data=df_display,
-                    get_path='path',
+                    get_polygon='polygon',
                     get_color='color',
-                    get_width=40,
-                    width_min_pixels=3,
-                    width_max_pixels=8,
+                    get_fill_color='color',
+                    get_line_color=[255, 255, 255, 100],
+                    line_width_min_pixels=1,
+                    filled=True,
                     pickable=True,
                     auto_highlight=True
                 )
@@ -108,7 +109,7 @@ with tab1:
                     layers=[sweep_layer],
                     initial_view_state=view_state,
                     tooltip={
-                        'html': '<b>{neighborhood}</b><br/>{day} {time}',
+                        'html': '<b>{name}</b><br/>{days}<br/>{time}',
                         'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
                     }
                 )
