@@ -169,23 +169,17 @@ with tab2:
             with col1:
                 st.markdown("### All Parking Facilities")
                 
-                # Color code by type
-                df_structures['color'] = df_structures['type'].apply(
-                    lambda x: [255, 140, 0, 200] if x == 'structure' else [100, 200, 100, 200]
-                )
-                
-                # Create two layers - one for structures (larger) and one for lots (smaller)
+                # Separate structures and lots
                 df_struct = df_structures[df_structures['type'] == 'structure'].copy()
                 df_lots = df_structures[df_structures['type'] == 'lot'].copy()
                 
-                df_struct['color'] = [[255, 140, 0, 220]] * len(df_struct)
-                df_lots['color'] = [[100, 200, 100, 200]] * len(df_lots)
+                # Create layers list
+                all_layers = []
                 
-                map_layers = []
-                
+                # Add structures layer if exists
                 if len(df_struct) > 0:
-                    # Parking structures - larger icons
-                    map_layers.append(pdk.Layer(
+                    df_struct['color'] = [[255, 140, 0, 220]] * len(df_struct)
+                    struct_layer = pdk.Layer(
                         'ScatterplotLayer',
                         data=df_struct,
                         get_position='[lon, lat]',
@@ -198,11 +192,13 @@ with tab2:
                         stroked=True,
                         get_line_color=[255, 255, 255],
                         line_width_min_pixels=2
-                    ))
+                    )
+                    all_layers.append(struct_layer)
                 
+                # Add lots layer if exists
                 if len(df_lots) > 0:
-                    # Surface lots - smaller squares
-                    map_layers.append(pdk.Layer(
+                    df_lots['color'] = [[100, 200, 100, 200]] * len(df_lots)
+                    lots_layer = pdk.Layer(
                         'ScatterplotLayer',
                         data=df_lots,
                         get_position='[lon, lat]',
@@ -212,7 +208,8 @@ with tab2:
                         radius_max_pixels=25,
                         pickable=True,
                         filled=True
-                    ))
+                    )
+                    all_layers.append(lots_layer)
                 
                 view_state = pdk.ViewState(
                     latitude=33.77,
@@ -222,7 +219,7 @@ with tab2:
                 )
                 
                 deck = pdk.Deck(
-                    layers=map_layers,
+                    layers=all_layers,
                     initial_view_state=view_state,
                     tooltip={
                         'html': '<b>{name}</b><br/>{neighborhood}<br/>Capacity: {capacity}<br/>Rate: {rate}',
@@ -267,6 +264,7 @@ with tab2:
             
     except FileNotFoundError:
         st.warning("Loading structure data...")
+
 
 with tab3:
     st.markdown("## Parking Ticket Analysis")
