@@ -1,0 +1,9 @@
+name,lat,lon,neighborhood,capacity,rate,type
+City Place Parking,33.7704,-118.1937,Downtown,450,$2/hr,structure
+Broadway Garage,33.7695,-118.191,Downtown,380,$2/hr,structure
+Ocean Center Garage,33.768,-118.1895,Downtown,320,$2/hr,structure
+Metro Blue Line Station,33.7683,-118.1912,Downtown,200,Free 2hr,lot
+2nd Street Lot,33.7542,-118.1165,Belmont Shore,180,$1/hr,lot
+Bayshore Lot,33.7535,-118.1145,Belmont Shore,150,$1/hr,lot
+Pike Outlets Garage,33.7635,-118.1895,Downtown,500,$3/hr,structure
+Atlantic Village Lot,33.8315,-118.1885,Bixby Knolls,120,Free,lot
