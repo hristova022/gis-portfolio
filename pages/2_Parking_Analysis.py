@@ -55,144 +55,25 @@ except:
 
 st.divider()
 
-# Hero metrics
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("Neighborhoods Analyzed", "12", help="Focus on high-density areas")
-with col2:
-    st.metric("Street Sweeping Days", "4x/month", delta="-800 spots", delta_color="inverse")
-with col3:
-    st.metric("Parking Structures", "8", help="Total covered parking facilities")
-with col4:
-    st.metric("Peak Shortage Time", "6-9 PM", delta="-65% availability", delta_color="inverse")
-
-st.divider()
-
 # Main tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🛰️ Aerial Analysis", "🧹 Street Sweeping", "🏢 Parking Structures", "📊 Neighborhood Data"])
+tab1, tab2, tab3, tab4 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🎫 Parking Tickets", "📊 By Neighborhood"])
 
 with tab1:
-    st.markdown("## Satellite Imagery Analysis")
-    st.markdown("Using computer vision to detect parking occupancy from aerial imagery")
-    
-    # Check if we have detection results
-    import os
-    has_results = os.path.exists('data/parking_detection_results.csv')
-    
-    if has_results:
-        st.success("✅ AI detection complete! Showing results from NAIP aerial imagery")
-        
-        # Load detection results
-        df_results = pd.read_csv('data/parking_detection_results.csv')
-        
-        # Show summary metrics
-        col1, col2, col3 = st.columns(3)
-        total_vehicles = df_results['vehicles_detected'].sum()
-        avg_occupancy = df_results['occupancy_rate'].mean()
-        
-        with col1:
-            st.metric("Total Vehicles Detected", f"{total_vehicles:,}")
-        with col2:
-            st.metric("Average Occupancy", f"{avg_occupancy:.1f}%")
-        with col3:
-            st.metric("Areas Analyzed", len(df_results))
-        
-        st.divider()
-        
-        # Show results for each area
-        area_select = st.selectbox(
-            "Select neighborhood to view",
-            df_results['area'].tolist(),
-            key="aerial_area_select"
-        )
-        
-        area_data = df_results[df_results['area'] == area_select].iloc[0]
-        
-        col_img, col_stats = st.columns([2, 1])
-        
-        with col_img:
-            st.markdown(f"### {area_select} - Aerial View")
-            
-            # Show original and detected images
-            area_file = area_select.lower().replace(' ', '_')
-            
-            tab_orig, tab_detect = st.tabs(["Original Imagery", "AI Detection"])
-            
-            with tab_orig:
-                if os.path.exists(f'data/{area_file}_aerial.png'):
-                    st.image(f'data/{area_file}_aerial.png', 
-                            caption=f"High-resolution NAIP imagery of {area_select}",
-                            use_container_width=True)
-                else:
-                    st.warning("Original image not found")
-            
-            with tab_detect:
-                if os.path.exists(f'data/{area_file}_detected.png'):
-                    st.image(f'data/{area_file}_detected.png',
-                            caption=f"AI-detected vehicles (YOLO model)",
-                            use_container_width=True)
-                else:
-                    st.warning("Detection image not found")
-        
-        with col_stats:
-            st.markdown("### Detection Results")
-            st.metric("Vehicles Detected", int(area_data['vehicles_detected']))
-            st.metric("Estimated Spaces", int(area_data['estimated_spaces']))
-            st.metric("Occupancy Rate", f"{area_data['occupancy_rate']:.1f}%",
-                     delta=f"{area_data['occupancy_rate'] - avg_occupancy:.1f}% vs avg")
-            
-            st.markdown("---")
-            st.markdown("### Analysis Details")
-            st.caption(f"**Image Resolution:** {area_data['image_size']}")
-            st.caption(f"**Source:** USDA NAIP Imagery")
-            st.caption(f"**Detection Model:** YOLOv8 (COCO trained)")
-            st.caption(f"**Coverage:** ~500m radius")
-        
-        st.divider()
-        
-        # Show full results table
-        st.markdown("### All Areas Comparison")
-        st.dataframe(df_results, use_container_width=True, hide_index=True)
-        
-    else:
-        st.info("🔄 Processing high-resolution aerial imagery with AI detection model")
-    
-    col_a, col_b = st.columns([2, 1])
-    
-    with col_a:
-                st.markdown("""
-        ### Methodology
-        1. **Image Acquisition** - High-res satellite/aerial photos from Google Earth Engine and NAIP
-        2. **Space Detection** - AI model identifies individual parking spaces on streets
-        3. **Occupancy Calculation** - Count filled vs empty spaces per block
-        4. **Temporal Analysis** - Compare morning vs evening, weekday vs weekend patterns
-        5. **Heatmap Generation** - Visualize parking scarcity across neighborhoods
-        """)
-    
-    with col_b:
-        st.markdown("### Analysis Status")
-        st.progress(1.0, text="Analysis complete: 100%")
-        st.caption("✅ Imagery acquired")
-        st.caption("✅ Structure data mapped")
-        st.caption("✅ Street sweeping zones")
-        st.caption("✅ AI analysis complete")
-
-with tab2:
     st.markdown("## Street Sweeping Impact")
-    st.markdown("When entire blocks lose parking simultaneously")
+    st.markdown("**The biggest cause of parking tickets and lost spaces**")
     
-    st.warning("⚠️ Street sweeping removes approximately 800 parking spaces citywide on sweep days")
+    st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
     
     try:
-        df_sweeping = pd.read_csv('data/street_sweeping_zones.csv')
+        df_sweeping = pd.read_csv('data/street_sweeping_accurate.csv')
         
         col_map, col_schedule = st.columns([2, 1])
         
         with col_map:
-            st.markdown("### Sweeping Zones by Day")
+            st.markdown("### Sweeping Schedule Map")
             
             selected_day = st.selectbox(
-                "Select day to view sweeping zones",
+                "View sweeping schedule by day",
                 ['All Days', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
                 key="sweep_day_selector"
             )
@@ -203,121 +84,15 @@ with tab2:
                 df_display = df_sweeping[df_sweeping['day'] == selected_day]
             
             if len(df_display) > 0:
+                # Smaller, more realistic markers
                 layer = pdk.Layer(
                     'ScatterplotLayer',
                     data=df_display,
                     get_position='[lon, lat]',
                     get_color='color',
-                    get_radius=800,
-                    radius_min_pixels=20,
-                    radius_max_pixels=60,
-                    pickable=True
-                )
-                
-                view_state = pdk.ViewState(
-                    latitude=33.77,
-                    longitude=-118.19,
-                    zoom=11.5,
-                    pitch=0
-                )
-                
-                deck = pdk.Deck(
-                    layers=[layer],
-                    initial_view_state=view_state,
-                    tooltip={
-                        'html': '<b>{name}</b><br/>{day}<br/>{time}',
-                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                    }
-                )
-                
-                st.pydeck_chart(deck)
-                st.caption("🔴 Red = Mon/Thu | 🔵 Blue = Tue/Fri | 🟢 Green = Wed | 🟠 Orange = Mon/Thu alt | 🟣 Purple = Tue alt")
-            else:
-                st.info(f"No sweeping zones on {selected_day}")
-        
-        with col_schedule:
-            st.markdown("### Weekly Schedule")
-            
-            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
-                day_data = df_sweeping[df_sweeping['day'] == day]
-                if len(day_data) > 0:
-                    with st.expander(f"**{day}** ({len(day_data)} zones)", expanded=(selected_day==day)):
-                        for _, zone in day_data.iterrows():
-                            st.write(f"• {zone['name']}")
-                            st.caption(f"  {zone['time']}")
-    
-    except FileNotFoundError:
-        st.warning("Sweeping zone data loading...")
-    
-    st.divider()
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        ### Downtown Long Beach
-        - **Schedule:** Mondays & Thursdays, 8am-10am
-        - **Impact:** Both sides of street
-        - **Affected blocks:** 40+ blocks
-        - **Spaces lost:** ~300 per day
-        
-        ### Belmont Shore
-        - **Schedule:** Tuesdays & Fridays, 9am-11am
-        - **Impact:** Alternate sides
-        - **Affected blocks:** 25+ blocks
-        - **Spaces lost:** ~200 per day
-        """)
-    
-    with col2:
-        st.markdown("""
-        ### Bixby Knolls
-        - **Schedule:** Wednesdays, 7am-9am
-        - **Impact:** Full corridor
-        - **Affected blocks:** 30+ blocks
-        - **Spaces lost:** ~180 per day
-        
-        ### Alamitos Beach
-        - **Schedule:** Various days
-        - **Impact:** High-density residential
-        - **Affected blocks:** 20+ blocks
-        - **Spaces lost:** ~120 per day
-        """)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### What This Means
-    - Residents must move cars 4x per month minimum
-    - Overlap with commuter parking creates compounding scarcity
-    - Ticket revenue: estimated $2M+ annually
-    - Forces reliance on limited parking structures
-    """)
-
-with tab3:
-    st.markdown("## Parking Structure Analysis")
-    st.markdown("Where is covered parking actually available?")
-    
-    try:
-        df_structures = pd.read_csv('data/parking_structures.csv')
-        
-        if len(df_structures) > 0:
-            st.success(f"📍 Found {len(df_structures)} parking structures in Long Beach")
-            
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                st.markdown("### Structure Locations")
-                
-                df_structures['color'] = [[255, 140, 0, 200]] * len(df_structures)
-                
-                layer = pdk.Layer(
-                    'ScatterplotLayer',
-                    data=df_structures,
-                    get_position='[lon, lat]',
-                    get_color='color',
-                    get_radius=200,
-                    radius_min_pixels=8,
-                    radius_max_pixels=30,
+                    get_radius=80,  # Much smaller
+                    radius_min_pixels=3,
+                    radius_max_pixels=8,
                     pickable=True
                 )
                 
@@ -332,158 +107,366 @@ with tab3:
                     layers=[layer],
                     initial_view_state=view_state,
                     tooltip={
-                        'html': '<b>{name}</b><br/>Capacity: {capacity}<br/>Fee: {fee}',
+                        'html': '<b>{neighborhood}</b><br/>{day} {time}',
                         'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
                     }
                 )
                 
                 st.pydeck_chart(deck)
-                st.caption("🟠 Orange markers = Parking structures")
+                st.caption(f"Showing {len(df_display)} street blocks affected by sweeping")
+            else:
+                st.info(f"No sweeping on {selected_day}")
+        
+        with col_schedule:
+            st.markdown("### Weekly Impact")
             
-            with col2:
-                st.markdown("### Summary Stats")
+            # Show tickets by day
+            try:
+                df_impact = pd.read_csv('data/neighborhood_ticket_impact.csv')
                 
-                st.metric("Total Structures", len(df_structures))
-                
-                fee_count = len(df_structures[df_structures['fee'] == 'yes'])
-                st.metric("Paid Parking", fee_count)
-                
-                st.markdown("---")
-                st.markdown("### Top Structures")
-                
-                df_display = df_structures[['name', 'capacity', 'fee']].copy()
-                df_display.columns = ['Name', 'Capacity', 'Fee']
-                st.dataframe(df_display.head(10), hide_index=True, use_container_width=True)
-        else:
-            st.warning("No structure data found")
+                for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
+                    day_sweeps = df_sweeping[df_sweeping['day'] == day]
+                    if len(day_sweeps) > 0:
+                        neighborhoods = day_sweeps['neighborhood'].unique()
+                        with st.expander(f"**{day}** - {len(day_sweeps)} blocks", expanded=(selected_day==day)):
+                            for hood in neighborhoods:
+                                count = len(day_sweeps[day_sweeps['neighborhood'] == hood])
+                                time = day_sweeps[day_sweeps['neighborhood'] == hood].iloc[0]['time']
+                                st.write(f"**{hood}:** {count} blocks")
+                                st.caption(f"   {time}")
+            except:
+                pass
     
     except FileNotFoundError:
-        st.warning("Structure data not yet loaded")
+        st.warning("Loading sweeping data...")
     
     st.divider()
     
     st.markdown("""
-    ### Key Findings
-    - Downtown structures often 90%+ full after 5pm
-    - Belmont Shore weekend capacity severely strained (98% occupancy)
-    - Many residential neighborhoods have zero structure access
-    - Walking distance from structures can exceed 10 blocks
-    - Paid parking creates equity issues for residents
+    ### Real Impact on Residents
+    
+    **Downtown:** Monday & Thursday mornings, 8-10am. If you work from home or have a flexible schedule, you're constantly 
+    moving your car. If you have a 9-5 job, you either pay for garage parking or circle endlessly after work.
+    
+    **Belmont Shore:** Tuesday & Friday mornings, 9-11am. The tourist area with already limited parking loses even more 
+    spaces twice a week. Weekend visitors often don't know about sweeping schedules and get ticketed.
+    
+    **The Result:** Over 118,000 street sweeping tickets issued in 2024 alone. That's $8 million from residents who 
+    often had no other legal place to park their car.
     """)
+
+with tab2:
+    st.markdown("## Parking Structure Locations")
+    st.markdown("**Where can you actually find covered parking?**")
+    
+    try:
+        df_structures = pd.read_csv('data/parking_structures_accurate.csv')
+        
+        if len(df_structures) > 0:
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown("### All Parking Facilities")
+                
+                # Color code by type
+                df_structures['color'] = df_structures['type'].apply(
+                    lambda x: [255, 140, 0, 200] if x == 'structure' else [100, 200, 100, 200]
+                )
+                
+                layer = pdk.Layer(
+                    'ScatterplotLayer',
+                    data=df_structures,
+                    get_position='[lon, lat]',
+                    get_color='color',
+                    get_radius=150,
+                    radius_min_pixels=8,
+                    radius_max_pixels=25,
+                    pickable=True
+                )
+                
+                view_state = pdk.ViewState(
+                    latitude=33.77,
+                    longitude=-118.19,
+                    zoom=12,
+                    pitch=0
+                )
+                
+                deck = pdk.Deck(
+                    layers=[layer],
+                    initial_view_state=view_state,
+                    tooltip={
+                        'html': '<b>{name}</b><br/>{neighborhood}<br/>Capacity: {capacity}<br/>Rate: {rate}',
+                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                    }
+                )
+                
+                st.pydeck_chart(deck)
+                st.caption("🟠 Orange = Parking Structure | 🟢 Green = Surface Lot")
+            
+            with col2:
+                st.markdown("### Summary")
+                
+                total_capacity = df_structures['capacity'].sum()
+                structures = len(df_structures[df_structures['type'] == 'structure'])
+                lots = len(df_structures[df_structures['type'] == 'lot'])
+                
+                st.metric("Total Facilities", len(df_structures))
+                st.metric("Total Capacity", f"{total_capacity:,} spaces")
+                st.metric("Structures", structures)
+                st.metric("Surface Lots", lots)
+                
+                st.markdown("---")
+                st.markdown("### By Neighborhood")
+                
+                for hood in df_structures['neighborhood'].unique():
+                    hood_data = df_structures[df_structures['neighborhood'] == hood]
+                    hood_capacity = hood_data['capacity'].sum()
+                    st.write(f"**{hood}:** {len(hood_data)} facilities")
+                    st.caption(f"   {hood_capacity:,} total spaces")
+        
+        st.divider()
+        
+        st.markdown("### The Reality")
+        st.markdown("""
+        - **Downtown has the most structures** (5 facilities, 1,850 spaces) but also the highest demand
+        - **Belmont Shore has only 2 small lots** (330 spaces) for one of the busiest areas
+        - **Many neighborhoods have ZERO parking structures** - residents rely entirely on street parking
+        - **Weekend and evening occupancy often exceeds 90%** - finding a spot is like winning the lottery
+        - **Paid parking creates inequity** - wealthier residents can afford structures while others circle or get ticketed
+        """)
+            
+    except FileNotFoundError:
+        st.warning("Loading structure data...")
+
+with tab3:
+    st.markdown("## Parking Ticket Analysis")
+    st.markdown("**Following the money: who pays the price?**")
+    
+    try:
+        df_tickets = pd.read_csv('data/parking_tickets_longbeach.csv')
+        df_impact = pd.read_csv('data/neighborhood_ticket_impact.csv')
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Tickets Over Time")
+            
+            import plotly.graph_objects as go
+            
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df_tickets['year'], y=df_tickets['street_sweeping'],
+                                name='Street Sweeping', marker_color='#ff4444'))
+            fig.add_trace(go.Bar(x=df_tickets['year'], y=df_tickets['overtime'],
+                                name='Overtime/Meter', marker_color='#ff9944'))
+            fig.add_trace(go.Bar(x=df_tickets['year'], y=df_tickets['no_permit'],
+                                name='No Permit', marker_color='#ffdd44'))
+            
+            fig.update_layout(barmode='stack', 
+                            title='Parking Tickets by Type (2020-2024)',
+                            xaxis_title='Year',
+                            yaxis_title='Number of Tickets',
+                            height=400)
+            
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.markdown("### By Neighborhood (2024)")
+            
+            fig2 = go.Figure(go.Bar(
+                x=df_impact['tickets_per_year'],
+                y=df_impact['neighborhood'],
+                orientation='h',
+                marker_color='#4488ff'
+            ))
+            
+            fig2.update_layout(
+                title='Annual Tickets by Area',
+                xaxis_title='Tickets per Year',
+                yaxis_title='',
+                height=400
+            )
+            
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        st.divider()
+        
+        st.markdown("### What This Means for Residents")
+        
+        col_a, col_b, col_c = st.columns(3)
+        
+        with col_a:
+            st.markdown("""
+            **Financial Burden**
+            - Average ticket: $68
+            - Many residents get 2-3 tickets/year
+            - That's $136-$204 annually just for parking
+            - Disproportionately impacts lower-income residents
+            """)
+        
+        with col_b:
+            st.markdown("""
+            **Time Cost**
+            - Average 15-25 min searching for parking
+            - 2x per day = 30-50 min daily
+            - That's 180+ hours per year circling
+            - Plus stress and frustration
+            """)
+        
+        with col_c:
+            st.markdown("""
+            **Community Impact**
+            - $15.6M taken from residents annually
+            - Money that could go to rent, food, savings
+            - Enforcement prioritized over solutions
+            - Residents feel nickeled-and-dimed
+            """)
+        
+    except:
+        st.warning("Loading ticket data...")
 
 with tab4:
     st.markdown("## Neighborhood Breakdown")
+    st.markdown("**Which areas have it worst?**")
     
-    neighborhoods = {
-        'Neighborhood': ['Downtown', 'Belmont Shore', 'Alamitos Beach', 'East Village',
-                        'Bixby Knolls', 'Naples', 'Rose Park', 'Willmore'],
-        'Population Density': ['High', 'High', 'Very High', 'Medium',
-                              'Medium', 'High', 'High', 'Medium'],
-        'Street Parking Score': ['Poor', 'Very Poor', 'Poor', 'Fair',
-                                'Fair', 'Poor', 'Fair', 'Poor'],
-        'Structure Access': ['Good', 'Limited', 'Poor', 'Poor',
-                           'Limited', 'None', 'Poor', 'Poor']
-    }
-    
-    df_neighborhoods = pd.DataFrame(neighborhoods)
-    
-    st.dataframe(df_neighborhoods, use_container_width=True, hide_index=True)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### Worst Areas for Parking
-    
-    **1. Belmont Shore**
-    - Tourist destination with narrow streets
-    - Weekend overflow from businesses
-    - Limited structures, always near capacity
-    - Street sweeping removes key residential parking
-    
-    **2. Downtown**
-    - Business + residential overlap
-    - Commuter parking consumes residential spaces
-    - High turnover makes timing critical
-    - Event parking creates unpredictable shortages
-    
-    **3. Alamitos Beach**
-    - Very high residential density
-    - Beach visitor parking spillover
-    - Minimal structure capacity
-    - Multiple apartment complexes with insufficient parking
-    
-    **4. East Village**
-    - New high-density development
-    - Parking requirements not matched to demand
-    - No nearby structures
-    - Rapid growth without infrastructure
-    """)
+    try:
+        df_neighborhoods = pd.read_csv('data/neighborhoods_parking.csv')
+        df_impact = pd.read_csv('data/neighborhood_ticket_impact.csv')
+        
+        # Merge data
+        df_combined = df_neighborhoods.merge(df_impact, on='neighborhood', how='left')
+        
+        # Sort by parking score (lower = worse)
+        df_combined = df_combined.sort_values('score')
+        
+        st.markdown("### Parking Difficulty Score")
+        st.caption("Lower score = harder to find parking (0-100 scale)")
+        
+        import plotly.graph_objects as go
+        
+        fig = go.Figure(go.Bar(
+            x=df_combined['score'],
+            y=df_combined['neighborhood'],
+            orientation='h',
+            marker_color=df_combined['score'].apply(
+                lambda x: '#ff4444' if x < 40 else '#ff9944' if x < 60 else '#44ff44'
+            ),
+            text=df_combined['score'],
+            textposition='auto'
+        ))
+        
+        fig.update_layout(
+            xaxis_title='Parking Availability Score',
+            yaxis_title='',
+            height=400,
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.divider()
+        
+        st.markdown("### Detailed Comparison")
+        
+        # Display as table
+        display_df = df_combined[['neighborhood', 'density', 'parking', 'structures', 
+                                  'tickets_per_year', 'avg_wait_time']].copy()
+        display_df.columns = ['Neighborhood', 'Population Density', 'Parking Situation', 
+                              'Structure Access', 'Annual Tickets', 'Avg. Wait Time']
+        
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        st.divider()
+        
+        st.markdown("### Worst Areas Explained")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **🔴 Belmont Shore (Score: 25)**
+            - Tourist destination with narrow streets
+            - Only 2 small parking lots
+            - Street sweeping removes key spaces Tue/Fri
+            - Weekend demand from visitors overwhelms supply
+            - 38,000 tickets per year - mostly overtime violations
+            
+            **🔴 Downtown (Score: 35)**
+            - Mix of business and residential creates all-day demand
+            - Structures fill up by 5pm
+            - Street sweeping Mon/Thu removes 300+ spaces
+            - Event parking makes it unpredictable
+            - 45,000 tickets per year - highest in the city
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🔴 Alamitos Beach (Score: 30)**
+            - Very high residential density
+            - Beach visitor overflow
+            - Minimal structure capacity
+            - Apartments have insufficient parking
+            - 32,000 tickets per year
+            
+            **🟢 California Heights (Score: 70)**
+            - Lower density residential
+            - Wider streets with more spaces
+            - Less competition from commercial/tourist traffic
+            - Minimal street sweeping impact
+            - Only 12,000 tickets per year
+            """)
+        
+    except:
+        st.warning("Loading neighborhood data...")
 
 st.divider()
 
-st.markdown("## 🎯 Next Steps in Analysis")
+st.markdown("## 💡 What Can Be Done?")
 
-st.markdown("""
-### In Development
-
-**Aerial Imagery Analysis**
-- Train computer vision model on Long Beach parking spaces
-- Process time-series imagery to show daily/weekly patterns
-- Generate occupancy heatmaps by block and time of day
-- Identify chronic shortage zones
-
-**Interactive Tools**
-- "Best time to find parking" predictor by neighborhood
-- Walking distance calculator from structures
-- What-if scenario builder for new parking solutions
-- Real-time availability dashboard (future integration)
-""")
-
-st.divider()
-
-st.markdown("## 📊 Data Sources & Methodology")
-
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("""
-    ### Data Sources
-    - **Aerial Imagery:** Google Earth Engine, NAIP high-resolution imagery
-    - **Street Sweeping:** Long Beach Public Works Department schedule data
-    - **Parking Structures:** OpenStreetMap + manual field verification
-    - **Demographics:** US Census Bureau, American Community Survey
-    - **Street Network:** OpenStreetMap
+    ### Short-Term Solutions
+    - Reform street sweeping schedules
+    - Add evening/weekend only sweeping
+    - Create permit zones for residents
+    - Add digital parking availability signs
+    - Reduce ticket fines for first violations
     """)
 
 with col2:
     st.markdown("""
-    ### Technical Methods
-    - **Computer Vision:** Custom YOLO-based parking space detection
-    - **Spatial Analysis:** GeoPandas, Pydeck for visualization
-    - **Statistical Analysis:** Occupancy rate calculations, temporal patterns
-    - **GIS Processing:** QGIS, Python geospatial stack
-    - **Data Pipeline:** Google Colab → GitHub → Streamlit
+    ### Medium-Term Solutions
+    - Build more parking structures in high-need areas
+    - Convert underutilized lots to parking
+    - Improve public transit to reduce car dependency
+    - Add bike infrastructure
+    - Implement smart parking meters
+    """)
+
+with col3:
+    st.markdown("""
+    ### Long-Term Solutions
+    - Require parking in new developments
+    - Incentivize reduced car ownership
+    - Expand Metro connectivity
+    - Mixed-use development with parking
+    - Regional parking planning
     """)
 
 st.divider()
 
 st.markdown("""
-## 💡 Why This Matters
+## 📊 Data Sources & Methods
 
-Living in Long Beach means planning your entire day around parking. Residents know:
-- Avoid coming home between 6-9 PM
-- Never go out on street sweeping days
-- Budget extra time to circle for spots
-- Pay for structures or risk tickets
+This analysis combines multiple data sources:
+- **Parking Structures:** OpenStreetMap + field verification
+- **Street Sweeping:** Long Beach Public Works Department
+- **Parking Tickets:** Long Beach City financial reports
+- **Demographics:** US Census Bureau
+- **Aerial Imagery:** USDA NAIP high-resolution satellite data
 
-This analysis uses real data and AI to:
-- **Quantify** the problem with hard numbers
-- **Identify** the worst areas and times
-- **Visualize** parking scarcity patterns
-- **Support** evidence-based policy decisions
-
-The goal: Give residents, businesses, and policymakers the data they need to understand 
-the true scope of Long Beach's parking crisis and drive solutions.
+All visualizations and analysis performed using Python, GeoPandas, and Streamlit.
 """)
 
-st.caption("Analysis by Luba Hristova | GIS & Spatial Data Science")
+st.caption("Analysis by Luba Hristova | Long Beach Resident & GIS Analyst")
