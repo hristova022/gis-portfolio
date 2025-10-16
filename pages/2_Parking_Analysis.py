@@ -112,7 +112,7 @@ with tab1:
                 )
                 
                 deck = pdk.Deck(
-                    map_style='mapbox://styles/mapbox/streets-v12',
+                    map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
                     layers=[sweep_layer],
                     initial_view_state=view_state,
                     tooltip={
@@ -465,7 +465,7 @@ with tab5:
     except:
         st.warning("Loading ticket data...")
 
-with tab5:
+with tab4:
     st.markdown("## Neighborhood Breakdown")
     st.markdown("**Which areas have it worst?**")
     
