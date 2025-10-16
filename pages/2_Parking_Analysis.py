@@ -60,7 +60,7 @@ st.divider()
 
 
 # Main tabs - now with 5 tabs including Aerial Imagery
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🛰️ Aerial Imagery", "🎫 Parking Tickets", "📊 By Neighborhood"])
+tab1, tab2, tab3, tab4 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🎫 Parking Tickets", "📊 By Neighborhood"])
 
 with tab1:
     st.markdown("## Street Sweeping Impact")
@@ -107,7 +107,7 @@ with tab1:
                 view_state = pdk.ViewState(
                     latitude=33.77,
                     longitude=-118.17,
-                    zoom=11.2,
+                    zoom=11.8,
                     pitch=0
                 )
                 
