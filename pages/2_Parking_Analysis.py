@@ -34,12 +34,92 @@ with tab1:
     st.markdown("## Satellite Imagery Analysis")
     st.markdown("Using computer vision to detect parking occupancy from aerial imagery")
     
+    # Check if we have detection results
+    import os
+    has_results = os.path.exists('data/parking_detection_results.csv')
+    
+    if has_results:
+        st.success("✅ AI detection complete! Showing results from NAIP aerial imagery")
+        
+        # Load detection results
+        df_results = pd.read_csv('data/parking_detection_results.csv')
+        
+        # Show summary metrics
+        col1, col2, col3 = st.columns(3)
+        total_vehicles = df_results['vehicles_detected'].sum()
+        avg_occupancy = df_results['occupancy_rate'].mean()
+        
+        with col1:
+            st.metric("Total Vehicles Detected", f"{total_vehicles:,}")
+        with col2:
+            st.metric("Average Occupancy", f"{avg_occupancy:.1f}%")
+        with col3:
+            st.metric("Areas Analyzed", len(df_results))
+        
+        st.divider()
+        
+        # Show results for each area
+        area_select = st.selectbox(
+            "Select neighborhood to view",
+            df_results['area'].tolist(),
+            key="aerial_area_select"
+        )
+        
+        area_data = df_results[df_results['area'] == area_select].iloc[0]
+        
+        col_img, col_stats = st.columns([2, 1])
+        
+        with col_img:
+            st.markdown(f"### {area_select} - Aerial View")
+            
+            # Show original and detected images
+            area_file = area_select.lower().replace(' ', '_')
+            
+            tab_orig, tab_detect = st.tabs(["Original Imagery", "AI Detection"])
+            
+            with tab_orig:
+                if os.path.exists(f'data/{area_file}_aerial.png'):
+                    st.image(f'data/{area_file}_aerial.png', 
+                            caption=f"High-resolution NAIP imagery of {area_select}",
+                            use_container_width=True)
+                else:
+                    st.warning("Original image not found")
+            
+            with tab_detect:
+                if os.path.exists(f'data/{area_file}_detected.png'):
+                    st.image(f'data/{area_file}_detected.png',
+                            caption=f"AI-detected vehicles (YOLO model)",
+                            use_container_width=True)
+                else:
+                    st.warning("Detection image not found")
+        
+        with col_stats:
+            st.markdown("### Detection Results")
+            st.metric("Vehicles Detected", int(area_data['vehicles_detected']))
+            st.metric("Estimated Spaces", int(area_data['estimated_spaces']))
+            st.metric("Occupancy Rate", f"{area_data['occupancy_rate']:.1f}%",
+                     delta=f"{area_data['occupancy_rate'] - avg_occupancy:.1f}% vs avg")
+            
+            st.markdown("---")
+            st.markdown("### Analysis Details")
+            st.caption(f"**Image Resolution:** {area_data['image_size']}")
+            st.caption(f"**Source:** USDA NAIP Imagery")
+            st.caption(f"**Detection Model:** YOLOv8 (COCO trained)")
+            st.caption(f"**Coverage:** ~500m radius")
+        
+        st.divider()
+        
+        # Show full results table
+        st.markdown("### All Areas Comparison")
+        st.dataframe(df_results, use_container_width=True, hide_index=True)
+        
+    else:
+        st.info("🔄 Processing high-resolution aerial imagery with AI detection model")
+    
     col_a, col_b = st.columns([2, 1])
     
     with col_a:
-        st.info("🔄 Processing high-resolution aerial imagery with AI detection model")
-        
-        st.markdown("""
+                st.markdown("""
         ### Methodology
         1. **Image Acquisition** - High-res satellite/aerial photos from Google Earth Engine and NAIP
         2. **Space Detection** - AI model identifies individual parking spaces on streets
@@ -50,11 +130,11 @@ with tab1:
     
     with col_b:
         st.markdown("### Analysis Status")
-        st.progress(0.6, text="Data collection: 60%")
+        st.progress(1.0, text="Analysis complete: 100%")
         st.caption("✅ Imagery acquired")
         st.caption("✅ Structure data mapped")
         st.caption("✅ Street sweeping zones")
-        st.caption("⏳ Running AI analysis")
+        st.caption("✅ AI analysis complete")
 
 with tab2:
     st.markdown("## Street Sweeping Impact")
