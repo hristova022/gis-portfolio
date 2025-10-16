@@ -70,38 +70,40 @@ with tab1:
         col_map, col_schedule = st.columns([2, 1])
         
         with col_map:
-            st.markdown("### Sweeping Schedule Map")
+            st.markdown("### Street Sweeping Zones")
+            st.caption("Color-coded areas show when different neighborhoods are swept")
             
-            selected_day = st.selectbox(
-                "View sweeping schedule by day",
-                ['All Days', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            # Simple filter by day pattern
+            day_options = ['All Zones'] + sorted(df_sweeping['days'].unique().tolist())
+            selected_pattern = st.selectbox(
+                "Filter by schedule",
+                day_options,
                 key="sweep_day_selector"
             )
             
-            if selected_day == 'All Days':
+            if selected_pattern == 'All Zones':
                 df_display = df_sweeping
             else:
-                df_display = df_sweeping[df_sweeping['day'] == selected_day]
+                df_display = df_sweeping[df_sweeping['days'] == selected_pattern]
             
             if len(df_display) > 0:
-                # Use line segments to show actual streets
+                # Use polygon layer to show zones
                 sweep_layer = pdk.Layer(
                     'PolygonLayer',
                     data=df_display,
                     get_polygon='polygon',
-                    get_color='color',
                     get_fill_color='color',
-                    get_line_color=[255, 255, 255, 100],
-                    line_width_min_pixels=1,
-                    filled=True,
+                    get_line_color=[255, 255, 255, 80],
+                    line_width_min_pixels=2,
                     pickable=True,
-                    auto_highlight=True
+                    auto_highlight=True,
+                    filled=True
                 )
                 
                 view_state = pdk.ViewState(
                     latitude=33.77,
-                    longitude=-118.19,
-                    zoom=12,
+                    longitude=-118.17,
+                    zoom=11.2,
                     pitch=0
                 )
                 
@@ -115,47 +117,41 @@ with tab1:
                 )
                 
                 st.pydeck_chart(deck)
-                st.caption(f"🔴 Red = Monday | 🔵 Blue = Tuesday | 🟢 Green = Wednesday | 🟠 Orange = Thursday | 🟣 Purple = Friday | Lines show actual streets where sweeping occurs")
+                st.caption("🟣 Purple = Thu-Fri | 🔵 Blue = Tue-Wed & Wed-Thu | 🟢 Green = Mon-Thu | 🟠 Orange = East Side | 🩷 Pink = Mon-Tue")
             else:
-                st.info(f"No sweeping on {selected_day}")
+                st.info("No zones match selected filter")
         
         with col_schedule:
-            st.markdown("### Weekly Impact")
+            st.markdown("### Zone Summary")
             
-            # Show tickets by day
-            try:
-                df_impact = pd.read_csv('data/neighborhood_ticket_impact.csv')
-                
-                for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
-                    day_sweeps = df_sweeping[df_sweeping['day'] == day]
-                    if len(day_sweeps) > 0:
-                        neighborhoods = day_sweeps['neighborhood'].unique()
-                        with st.expander(f"**{day}** - {len(day_sweeps)} blocks", expanded=(selected_day==day)):
-                            for hood in neighborhoods:
-                                count = len(day_sweeps[day_sweeps['neighborhood'] == hood])
-                                time = day_sweeps[day_sweeps['neighborhood'] == hood].iloc[0]['time']
-                                st.write(f"**{hood}:** {count} blocks")
-                                st.caption(f"   {time}")
-            except:
-                pass
+            # Show zones grouped by schedule
+            st.markdown(f"**Showing {len(df_display)} zones**")
+            
+            for _, zone in df_display.iterrows():
+                with st.expander(f"**{zone['name']}**"):
+                    st.write(f"**Schedule:** {zone['days']}")
+                    st.write(f"**Time:** {zone['time']}")
     
     except FileNotFoundError:
         st.warning("Loading sweeping data...")
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
     
     st.divider()
     
     st.markdown("""
     ### Real Impact on Residents
     
-    **Downtown:** Monday & Thursday mornings, 8-10am. If you work from home or have a flexible schedule, you're constantly 
+    **Downtown:** Multiple days per week. If you work from home or have a flexible schedule, you're constantly 
     moving your car. If you have a 9-5 job, you either pay for garage parking or circle endlessly after work.
     
-    **Belmont Shore:** Tuesday & Friday mornings, 9-11am. The tourist area with already limited parking loses even more 
-    spaces twice a week. Weekend visitors often don't know about sweeping schedules and get ticketed.
+    **Belmont Shore:** Regular sweeping in the tourist area with already limited parking loses even more 
+    spaces. Weekend visitors often don't know about sweeping schedules and get ticketed.
     
     **The Result:** Over 118,000 street sweeping tickets issued in 2024 alone. That's $8 million from residents who 
     often had no other legal place to park their car.
     """)
+
 
 with tab2:
     st.markdown("## Parking Structure Locations")
