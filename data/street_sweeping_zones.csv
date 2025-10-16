@@ -1,0 +1,11 @@
+name,lat,lon,day,time,color
+Downtown Core,33.7701,-118.1937,Monday,8am-10am,"[255, 0, 0, 160]"
+Downtown Core,33.7701,-118.1937,Thursday,8am-10am,"[255, 0, 0, 160]"
+Belmont Shore,33.755,-118.1147,Tuesday,9am-11am,"[0, 0, 255, 160]"
+Belmont Shore,33.755,-118.1147,Friday,9am-11am,"[0, 0, 255, 160]"
+Bixby Knolls,33.8319,-118.1887,Wednesday,7am-9am,"[0, 255, 0, 160]"
+Alamitos Beach,33.765,-118.185,Monday,10am-12pm,"[255, 165, 0, 160]"
+Alamitos Beach,33.765,-118.185,Thursday,10am-12pm,"[255, 165, 0, 160]"
+East Village,33.785,-118.175,Tuesday,8am-10am,"[147, 112, 219, 160]"
+Naples,33.7475,-118.1125,Wednesday,9am-11am,"[255, 192, 203, 160]"
+Rose Park,33.79,-118.16,Friday,8am-10am,"[64, 224, 208, 160]"

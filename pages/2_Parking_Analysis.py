@@ -62,6 +62,7 @@ with tab2:
     
     st.warning("⚠️ Street sweeping removes approximately 800 parking spaces citywide on sweep days")
     
+    # Load sweeping data
     try:
         df_sweeping = pd.read_csv('data/street_sweeping_zones.csv')
         
@@ -70,18 +71,21 @@ with tab2:
         with col_map:
             st.markdown("### Sweeping Zones by Day")
             
+            # Day selector
             selected_day = st.selectbox(
                 "Select day to view sweeping zones",
                 ['All Days', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
                 key="sweep_day_selector"
             )
             
+            # Filter data
             if selected_day == 'All Days':
                 df_display = df_sweeping
             else:
                 df_display = df_sweeping[df_sweeping['day'] == selected_day]
             
             if len(df_display) > 0:
+                # Create map
                 layer = pdk.Layer(
                     'ScatterplotLayer',
                     data=df_display,
@@ -117,6 +121,7 @@ with tab2:
         with col_schedule:
             st.markdown("### Weekly Schedule")
             
+            # Group by day and show summary
             for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
                 day_data = df_sweeping[df_sweeping['day'] == day]
                 if len(day_data) > 0:
@@ -134,44 +139,6 @@ with tab2:
     
     with col1:
         st.markdown("""
-        ### Downtown Long Beach
-        - **Schedule:** Mondays & Thursdays, 8am-10am
-        - **Impact:** Both sides of street
-        - **Affected blocks:** 40+ blocks
-        - **Spaces lost:** ~300 per day
-        
-        ### Belmont Shore
-        - **Schedule:** Tuesdays & Fridays, 9am-11am
-        - **Impact:** Alternate sides
-        - **Affected blocks:** 25+ blocks
-        - **Spaces lost:** ~200 per day
-        """)
-    
-    with col2:
-        st.markdown("""
-        ### Bixby Knolls
-        - **Schedule:** Wednesdays, 7am-9am
-        - **Impact:** Full corridor
-        - **Affected blocks:** 30+ blocks
-        - **Spaces lost:** ~180 per day
-        
-        ### Alamitos Beach
-        - **Schedule:** Various days
-        - **Impact:** High-density residential
-        - **Affected blocks:** 20+ blocks
-        - **Spaces lost:** ~120 per day
-        """)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### What This Means
-    - Residents must move cars 4x per month minimum
-    - Overlap with commuter parking creates compounding scarcity
-    - Ticket revenue: estimated $2M+ annually
-    - Forces reliance on limited parking structures
-    """)
-
 with tab3:
     st.markdown("## Parking Structure Analysis")
     st.markdown("Where is covered parking actually available?")
