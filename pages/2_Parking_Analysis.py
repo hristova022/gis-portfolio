@@ -174,6 +174,121 @@ with tab3:
     - Disproportionately impacts those who can't afford garage parking
     """)
 
+with tab3:
+    st.markdown("## Parking Ticket Hotspots")
+    st.markdown("**Where tickets are issued most frequently**")
+    
+    st.warning("⚠️ Some locations issue over 900 tickets per year - that's $61,000+ from a single block")
+    
+    try:
+        df_hotspots = pd.read_csv('data/parking_ticket_hotspots.csv')
+        
+        col_map, col_stats = st.columns([2, 1])
+        
+        with col_map:
+            st.markdown("### Ticket Concentration Map")
+            st.caption("Larger circles = more tickets issued. Red = highest, Orange = medium, Yellow = lower")
+            
+            violation_types = ['All Violations'] + sorted(df_hotspots['primary_violation'].unique().tolist())
+            selected_violation = st.selectbox(
+                "Filter by violation type",
+                violation_types,
+                key="violation_filter"
+            )
+            
+            if selected_violation == 'All Violations':
+                df_display = df_hotspots
+            else:
+                df_display = df_hotspots[df_hotspots['primary_violation'] == selected_violation]
+            
+            hotspot_layer = pdk.Layer(
+                'ScatterplotLayer',
+                data=df_display,
+                get_position='[lon, lat]',
+                get_color='color',
+                get_radius='size',
+                radius_scale=1,
+                radius_min_pixels=10,
+                radius_max_pixels=80,
+                pickable=True,
+                opacity=0.7,
+                stroked=True,
+                filled=True,
+                line_width_min_pixels=2,
+                get_line_color=[255, 255, 255]
+            )
+            
+            view_state = pdk.ViewState(
+                latitude=33.775,
+                longitude=-118.17,
+                zoom=11.5,
+                pitch=0
+            )
+            
+            deck = pdk.Deck(
+                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                layers=[hotspot_layer],
+                initial_view_state=view_state,
+                tooltip={
+                    'html': '<b>{tickets} tickets/year</b><br/>Top violation: {primary_violation}',
+                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                }
+            )
+            
+            st.pydeck_chart(deck, height=500)
+            st.caption("🔴 Red = 700+ tickets/year | 🟠 Orange = 500-700 | 🟡 Yellow = <500")
+        
+        with col_stats:
+            st.markdown("### Hotspot Statistics")
+            
+            total_tickets = df_display['tickets'].sum()
+            avg_per_spot = df_display['tickets'].mean()
+            worst_spot = df_display.nlargest(1, 'tickets').iloc[0]
+            
+            st.metric("Total Annual Tickets", f"{total_tickets:,}")
+            st.metric("Avg per Hotspot", f"{avg_per_spot:.0f}")
+            st.metric("Worst Location", f"{worst_spot['tickets']} tickets",
+                     help=f"Primary violation: {worst_spot['primary_violation']}")
+            
+            st.markdown("---")
+            st.markdown("### Top 5 Worst Spots")
+            
+            top5 = df_display.nlargest(5, 'tickets')
+            for idx, (_, row) in enumerate(top5.iterrows(), 1):
+                st.write(f"**#{idx}** - {row['tickets']} tickets/year")
+                st.caption(f"   {row['primary_violation']}")
+            
+            st.markdown("---")
+            st.markdown("### By Violation Type")
+            
+            violation_counts = df_hotspots.groupby('primary_violation')['tickets'].sum()
+            for violation, count in violation_counts.sort_values(ascending=False).items():
+                st.write(f"**{violation}:** {count:,}")
+    
+    except FileNotFoundError:
+        st.warning("Loading hotspot data...")
+    
+    st.divider()
+    
+    st.markdown("""
+    ### Why This Matters
+    
+    **High-ticket zones tell us where parking policy fails residents:**
+    
+    - **Belmont Shore 2nd Street:** 920 tickets/year for expired meters means there aren't enough spaces for the demand
+    - **Downtown core:** 850+ tickets/year for street sweeping means residents have nowhere else to park
+    - **Concentrated hotspots:** When one block generates $60k+ in tickets, that's a policy problem, not a parking problem
+    
+    **The pattern is clear:** The city makes the most money from areas with the worst parking shortages. 
+    Instead of adding parking solutions, we ticket residents who have no alternatives.
+    
+    **Cost to residents in these hotspots:**
+    - Top hotspot area: ~$62,000/year from one location
+    - Average $68 per ticket
+    - Many residents get multiple tickets per year
+    - Disproportionately impacts those who can't afford garage parking
+    """)
+
 with tab1:
     st.markdown("## Street Sweeping Impact")
     st.markdown("**The biggest cause of parking tickets and lost spaces**")
@@ -361,6 +476,89 @@ with tab2:
             
     except FileNotFoundError:
         st.warning("Loading structure data...")
+
+with tab1:
+    st.markdown("## Street Sweeping Impact")
+    st.markdown("**The biggest cause of parking tickets and lost spaces**")
+    
+    st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
+    
+    col_map, col_info = st.columns([2, 1])
+    
+    with col_map:
+        st.markdown("### Street Sweeping Schedule Map")
+        st.caption("Official Long Beach Public Works street sweeping zones")
+        
+        # Display the official map image directly
+        if os.path.exists('data/street_sweeping_official.png'):
+            st.image('data/street_sweeping_official.png',
+                    caption="Official Long Beach Street Sweeping Schedule - Phase 1",
+                    use_container_width=True)
+            
+        else:
+            st.warning("⚠️ Official map image not found")
+            st.info("""
+            To add the official map:
+            1. Go to: https://github.com/hristova022/gis-portfolio/tree/main/data
+            2. Click "Add file" → "Upload files"
+            3. Upload your street sweeping map image as 'street_sweeping_official.png'
+            4. Commit
+            """)
+        
+    with col_info:
+        st.markdown("### Street Sweeping Schedule")
+        
+        st.markdown("""
+        **Map Legend (Official Long Beach):**
+        """)
+        
+        # Match the exact official legend
+        col_a, col_b = st.columns([1, 3])
+        
+        with col_a:
+            st.markdown("🩷")
+            st.markdown("🟢")
+            st.markdown("🟡")
+            st.markdown("🔵")
+            st.markdown("🟠")
+        
+        with col_b:
+            st.markdown("**MON-TUE AREAS**")
+            st.markdown("**MON-THU AREAS**")
+            st.markdown("**TUE-WED AREAS**")
+            st.markdown("**WED-THU AREAS**")
+            st.markdown("**THU-FRI AREAS**")
+        
+        st.markdown("---")
+        
+        st.markdown("""
+        **Additional Features:**
+        - 🔵 Blue lines = Streets swept before 8am
+        - Dotted areas = Schools & Parks
+        - Bold outline = City boundary
+        
+        ---
+        
+        **Impact:**
+        - 118,000+ tickets/year
+        - $68 per violation
+        - Must move 2-4x monthly
+        """)
+    
+    st.divider()
+    
+    st.markdown("""
+    ### Real Impact on Residents
+    
+    **Downtown:** Multiple days per week. If you work from home or have a flexible schedule, you're constantly 
+    moving your car. If you have a 9-5 job, you either pay for garage parking or circle endlessly after work.
+    
+    **Belmont Shore:** Regular sweeping in the tourist area with already limited parking loses even more 
+    spaces. Weekend visitors often don't know about sweeping schedules and get ticketed.
+    
+    **The Result:** Over 118,000 street sweeping tickets issued in 2024 alone. That's $8 million from residents who 
+    often had no other legal place to park their car.
+    """)
 
 with tab4:
     st.markdown("## Neighborhood Breakdown")
