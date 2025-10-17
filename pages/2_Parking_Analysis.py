@@ -57,7 +57,122 @@ except:
 st.divider()
 
 # Main tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🎫 Ticket Hotspots", "📊 By Neighborhood"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎫 Ticket Hotspots", "🧹 Street Sweeping", "🏢 Parking Structures", "📊 By Neighborhood"])
+
+with tab3:
+    st.markdown("## Parking Ticket Hotspots")
+    st.markdown("**Where tickets are issued most frequently**")
+    
+    st.warning("⚠️ Some locations issue over 900 tickets per year - that's $61,000+ from a single block")
+    
+    try:
+        df_hotspots = pd.read_csv('data/parking_ticket_hotspots.csv')
+        
+        col_map, col_stats = st.columns([2, 1])
+        
+        with col_map:
+            st.markdown("### Ticket Concentration Map")
+            st.caption("Larger circles = more tickets issued. Red = highest, Orange = medium, Yellow = lower")
+            
+            violation_types = ['All Violations'] + sorted(df_hotspots['primary_violation'].unique().tolist())
+            selected_violation = st.selectbox(
+                "Filter by violation type",
+                violation_types,
+                key="violation_filter"
+            )
+            
+            if selected_violation == 'All Violations':
+                df_display = df_hotspots
+            else:
+                df_display = df_hotspots[df_hotspots['primary_violation'] == selected_violation]
+            
+            hotspot_layer = pdk.Layer(
+                'ScatterplotLayer',
+                data=df_display,
+                get_position='[lon, lat]',
+                get_color='color',
+                get_radius='size',
+                radius_scale=1,
+                radius_min_pixels=10,
+                radius_max_pixels=80,
+                pickable=True,
+                opacity=0.7,
+                stroked=True,
+                filled=True,
+                line_width_min_pixels=2,
+                get_line_color=[255, 255, 255]
+            )
+            
+            view_state = pdk.ViewState(
+                latitude=33.775,
+                longitude=-118.17,
+                zoom=11.5,
+                pitch=0
+            )
+            
+            deck = pdk.Deck(
+                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                layers=[hotspot_layer],
+                initial_view_state=view_state,
+                tooltip={
+                    'html': '<b>{tickets} tickets/year</b><br/>Top violation: {primary_violation}',
+                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                }
+            )
+            
+            st.pydeck_chart(deck, height=500)
+            st.caption("🔴 Red = 700+ tickets/year | 🟠 Orange = 500-700 | 🟡 Yellow = <500")
+        
+        with col_stats:
+            st.markdown("### Hotspot Statistics")
+            
+            total_tickets = df_display['tickets'].sum()
+            avg_per_spot = df_display['tickets'].mean()
+            worst_spot = df_display.nlargest(1, 'tickets').iloc[0]
+            
+            st.metric("Total Annual Tickets", f"{total_tickets:,}")
+            st.metric("Avg per Hotspot", f"{avg_per_spot:.0f}")
+            st.metric("Worst Location", f"{worst_spot['tickets']} tickets",
+                     help=f"Primary violation: {worst_spot['primary_violation']}")
+            
+            st.markdown("---")
+            st.markdown("### Top 5 Worst Spots")
+            
+            top5 = df_display.nlargest(5, 'tickets')
+            for idx, (_, row) in enumerate(top5.iterrows(), 1):
+                st.write(f"**#{idx}** - {row['tickets']} tickets/year")
+                st.caption(f"   {row['primary_violation']}")
+            
+            st.markdown("---")
+            st.markdown("### By Violation Type")
+            
+            violation_counts = df_hotspots.groupby('primary_violation')['tickets'].sum()
+            for violation, count in violation_counts.sort_values(ascending=False).items():
+                st.write(f"**{violation}:** {count:,}")
+    
+    except FileNotFoundError:
+        st.warning("Loading hotspot data...")
+    
+    st.divider()
+    
+    st.markdown("""
+    ### Why This Matters
+    
+    **High-ticket zones tell us where parking policy fails residents:**
+    
+    - **Belmont Shore 2nd Street:** 920 tickets/year for expired meters means there aren't enough spaces for the demand
+    - **Downtown core:** 850+ tickets/year for street sweeping means residents have nowhere else to park
+    - **Concentrated hotspots:** When one block generates $60k+ in tickets, that's a policy problem, not a parking problem
+    
+    **The pattern is clear:** The city makes the most money from areas with the worst parking shortages. 
+    Instead of adding parking solutions, we ticket residents who have no alternatives.
+    
+    **Cost to residents in these hotspots:**
+    - Top hotspot area: ~$62,000/year from one location
+    - Average $68 per ticket
+    - Many residents get multiple tickets per year
+    - Disproportionately impacts those who can't afford garage parking
+    """)
 
 with tab1:
     st.markdown("## Street Sweeping Impact")
@@ -246,121 +361,6 @@ with tab2:
             
     except FileNotFoundError:
         st.warning("Loading structure data...")
-
-with tab3:
-    st.markdown("## Parking Ticket Hotspots")
-    st.markdown("**Where tickets are issued most frequently**")
-    
-    st.warning("⚠️ Some locations issue over 900 tickets per year - that's $61,000+ from a single block")
-    
-    try:
-        df_hotspots = pd.read_csv('data/parking_ticket_hotspots.csv')
-        
-        col_map, col_stats = st.columns([2, 1])
-        
-        with col_map:
-            st.markdown("### Ticket Concentration Map")
-            st.caption("Larger circles = more tickets issued. Red = highest, Orange = medium, Yellow = lower")
-            
-            violation_types = ['All Violations'] + sorted(df_hotspots['primary_violation'].unique().tolist())
-            selected_violation = st.selectbox(
-                "Filter by violation type",
-                violation_types,
-                key="violation_filter"
-            )
-            
-            if selected_violation == 'All Violations':
-                df_display = df_hotspots
-            else:
-                df_display = df_hotspots[df_hotspots['primary_violation'] == selected_violation]
-            
-            hotspot_layer = pdk.Layer(
-                'ScatterplotLayer',
-                data=df_display,
-                get_position='[lon, lat]',
-                get_color='color',
-                get_radius='size',
-                radius_scale=1,
-                radius_min_pixels=10,
-                radius_max_pixels=80,
-                pickable=True,
-                opacity=0.7,
-                stroked=True,
-                filled=True,
-                line_width_min_pixels=2,
-                get_line_color=[255, 255, 255]
-            )
-            
-            view_state = pdk.ViewState(
-                latitude=33.775,
-                longitude=-118.17,
-                zoom=11.5,
-                pitch=0
-            )
-            
-            deck = pdk.Deck(
-                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-                layers=[hotspot_layer],
-                initial_view_state=view_state,
-                tooltip={
-                    'html': '<b>{tickets} tickets/year</b><br/>Top violation: {primary_violation}',
-                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                }
-            )
-            
-            st.pydeck_chart(deck)
-            st.caption("🔴 Red = 700+ tickets/year | 🟠 Orange = 500-700 | 🟡 Yellow = <500")
-        
-        with col_stats:
-            st.markdown("### Hotspot Statistics")
-            
-            total_tickets = df_display['tickets'].sum()
-            avg_per_spot = df_display['tickets'].mean()
-            worst_spot = df_display.nlargest(1, 'tickets').iloc[0]
-            
-            st.metric("Total Annual Tickets", f"{total_tickets:,}")
-            st.metric("Avg per Hotspot", f"{avg_per_spot:.0f}")
-            st.metric("Worst Location", f"{worst_spot['tickets']} tickets",
-                     help=f"Primary violation: {worst_spot['primary_violation']}")
-            
-            st.markdown("---")
-            st.markdown("### Top 5 Worst Spots")
-            
-            top5 = df_display.nlargest(5, 'tickets')
-            for idx, (_, row) in enumerate(top5.iterrows(), 1):
-                st.write(f"**#{idx}** - {row['tickets']} tickets/year")
-                st.caption(f"   {row['primary_violation']}")
-            
-            st.markdown("---")
-            st.markdown("### By Violation Type")
-            
-            violation_counts = df_hotspots.groupby('primary_violation')['tickets'].sum()
-            for violation, count in violation_counts.sort_values(ascending=False).items():
-                st.write(f"**{violation}:** {count:,}")
-    
-    except FileNotFoundError:
-        st.warning("Loading hotspot data...")
-    
-    st.divider()
-    
-    st.markdown("""
-    ### Why This Matters
-    
-    **High-ticket zones tell us where parking policy fails residents:**
-    
-    - **Belmont Shore 2nd Street:** 920 tickets/year for expired meters means there aren't enough spaces for the demand
-    - **Downtown core:** 850+ tickets/year for street sweeping means residents have nowhere else to park
-    - **Concentrated hotspots:** When one block generates $60k+ in tickets, that's a policy problem, not a parking problem
-    
-    **The pattern is clear:** The city makes the most money from areas with the worst parking shortages. 
-    Instead of adding parking solutions, we ticket residents who have no alternatives.
-    
-    **Cost to residents in these hotspots:**
-    - Top hotspot area: ~$62,000/year from one location
-    - Average $68 per ticket
-    - Many residents get multiple tickets per year
-    - Disproportionately impacts those who can't afford garage parking
-    """)
 
 with tab4:
     st.markdown("## Neighborhood Breakdown")
