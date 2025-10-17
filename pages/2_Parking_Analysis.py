@@ -65,89 +65,56 @@ with tab1:
     
     st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
     
-    try:
-        import requests
-        
-        col_map, col_schedule = st.columns([2, 1])
-        
-        with col_map:
-            st.markdown("### Street Sweeping Zones")
-            st.caption("Official data from Long Beach Public Works")
-            
-            @st.cache_data(ttl=3600)
-            def fetch_lb_sweeping():
-                SERVICE = "https://services2.arcgis.com/LukbLC9Gps89zZa7/arcgis/rest/services/Street_Sweeping_Schedule_view/FeatureServer/0/query"
-                r = requests.get(SERVICE, params={
-                    "where": "1=1", "outFields": "*", "outSR": 4326,
-                    "f": "geojson", "returnGeometry": "true"
-                }, timeout=30)
-                r.raise_for_status()
-                gj = r.json()
-                
-                colors = {
-                    "1st Monday": [214,157,188,160],
-                    "1st and 3rd Friday": [85,255,0,160],
-                    "1st and 3rd Monday": [255,170,0,160],
-                    "1st and 3rd Thursday": [0,197,255,160],
-                    "2nd and 4th Friday": [114,137,68,160],
-                    "2nd and 4th Thursday": [255,0,197,160],
-                    "3rd Monday": [205,102,102,160],
-                    "All Days": [197,0,255,160],
-                }
-                
-                for f in gj.get("features", []):
-                    lbl = (f.get("properties") or {}).get("Label", "")
-                    f["properties"]["fill"] = colors.get(lbl, [150,150,150,140])
-                
-                return gj
-            
-            gj = fetch_lb_sweeping()
-            st.success(f"📍 {len(gj.get('features', []))} official zones from Long Beach city data")
-            
-            geo_layer = pdk.Layer(
-                "GeoJsonLayer",
-                data=gj,
-                pickable=True,
-                stroked=True,
-                filled=True,
-                get_fill_color="properties.fill",
-                get_line_color=[255,255,255,120],
-                line_width_min_pixels=1,
-                auto_highlight=True,
-            )
-            
-            view_state = pdk.ViewState(latitude=33.77, longitude=-118.17, zoom=12)
-            
-            deck = pdk.Deck(
-                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-                layers=[geo_layer],
-                initial_view_state=view_state,
-                tooltip={"html": "<b>{Label}</b><br/>{STREETNAME}", "style": {"backgroundColor": "rgba(0,0,0,0.8)", "color": "white", "padding": "10px"}}
-            )
-            
-            st.pydeck_chart(deck)
-            st.caption("Official Long Beach street sweeping zones with actual street names")
-        
-        with col_schedule:
-            st.markdown("### Schedule Legend")
-            
-            schedules = {
-                "1st Monday": "🟪",
-                "1st and 3rd Friday": "🟩",
-                "1st and 3rd Monday": "🟧",
-                "1st and 3rd Thursday": "🔵",
-                "2nd and 4th Friday": "🟫",
-                "2nd and 4th Thursday": "🟣",
-                "3rd Monday": "🔴",
-                "All Days": "🟪",
-            }
-            
-            for schedule, emoji in schedules.items():
-                st.write(f"{emoji} **{schedule}**")
+    col_map, col_info = st.columns([2, 1])
     
-    except Exception as e:
-        st.error(f"Could not load official data: {str(e)}")
-        st.info("Using cached street sweeping zones...")
+    with col_map:
+        st.markdown("### Street Sweeping Schedule Map")
+        st.caption("Official Long Beach Public Works street sweeping zones")
+        
+        # Display the official map image directly
+        if os.path.exists('data/street_sweeping_official.png'):
+            st.image('data/street_sweeping_official.png',
+                    caption="Official Long Beach Street Sweeping Schedule - Phase 1",
+                    use_container_width=True)
+            
+        else:
+            st.warning("⚠️ Official map image not found")
+            st.info("""
+            To add the official map:
+            1. Go to: https://github.com/hristova022/gis-portfolio/tree/main/data
+            2. Click "Add file" → "Upload files"
+            3. Upload your street sweeping map image as 'street_sweeping_official.png'
+            4. Commit
+            """)
+        
+    with col_info:
+        st.markdown("### Map Legend")
+        
+        st.markdown("""
+        **Street Sweeping Times:**
+        
+        🩷 **Pink** = Mon-Tue (12:30-2:30 PM)
+        
+        🟢 **Green** = Mon-Thu (1:30-3:30 PM)
+        
+        🔵 **Cyan/Blue** = Tue-Wed (12:30-2:30 PM)
+        
+        🔵 **Dark Blue** = Wed-Thu (8-10 AM)
+        
+        🟣 **Purple** = Thu-Fri (9-11 AM)
+        
+        🟠 **Orange** = Various (8-10 AM, 10-12 PM, 1:30-3:30 PM)
+        """)
+        
+        st.markdown("---")
+        st.markdown("""
+        **Why This Matters:**
+        
+        - Streets shown in color require moving your car
+        - Sweeping typically happens monthly
+        - Tickets are $68 per violation
+        - Over 118,000 sweeping tickets issued annually
+        """)
     
     st.divider()
     
