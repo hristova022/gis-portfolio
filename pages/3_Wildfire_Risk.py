@@ -30,12 +30,18 @@ with st.container():
     st.markdown("""
     ### Why This Analysis Matters
     
-    Southern California has **8 major wildfire risk zones** - areas where fires happen repeatedly due to geography, 
-    weather patterns, and how communities are built.
+    Southern California has **8 major wildfire risk zones** - areas where fires happen repeatedly. 
     
     This map shows **WHERE** the risk is highest and **WHY** each area is dangerous.
     
-    **No technical jargon. Just clear information.**
+    **Three main factors create extreme fire risk:**
+    1. **Geography** - Mountains and canyons that channel winds and make fires spread uphill rapidly
+    2. **Weather** - Hot, dry Santa Ana winds that can push fires at speeds up to 100 mph
+    3. **Where homes are built** - Communities built directly in fire-prone wildlands with only one or two roads out
+    
+    When homes are built in canyons, on hillsides, or surrounded by brush and forests, they become part of the 
+    fuel that fires burn. This is called the "Wildland-Urban Interface" - the dangerous zone where neighborhoods 
+    meet wildland. **These areas have the highest property loss when fires occur.**
     """)
 
 st.divider()
@@ -57,34 +63,34 @@ with col3:
 
 st.divider()
 
-# SIMPLE MAP - Just colored circles, no fancy 3D
+# HEATMAP - Shows intensity of risk across areas
 st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
-st.markdown("**Each circle is a high-risk area. Bigger and redder = more dangerous.**")
+st.markdown("**Red areas show where wildfire risk is highest. The deeper the red, the more dangerous.**")
 
-# Simple scatter plot layer
-map_data = summary.copy()
+# Create heatmap layer using the zone boundary points
+heatmap_layer = pdk.Layer(
+    "HeatmapLayer",
+    data=zones,
+    opacity=0.8,
+    get_position=["longitude", "latitude"],
+    threshold=0.3,
+    get_weight="risk_score / 10",
+    radiusPixels=60,
+)
 
-# Create simple color based on risk
-def get_color(risk):
-    if risk >= 90:
-        return [180, 0, 0, 200]  # Dark red
-    elif risk >= 85:
-        return [255, 0, 0, 180]  # Red
-    else:
-        return [255, 100, 0, 160]  # Orange
+# Also add labels for zone centers
+label_data = summary.copy()
 
-map_data['color'] = map_data['risk_score'].apply(get_color)
-map_data['radius'] = map_data['risk_score'] * 600  # Size based on risk
-
-layer = pdk.Layer(
-    'ScatterplotLayer',
-    data=map_data,
-    get_position='[longitude, latitude]',
-    get_color='color',
-    get_radius='radius',
-    pickable=True,
-    auto_highlight=True,
+text_layer = pdk.Layer(
+    "TextLayer",
+    data=label_data,
+    get_position=["longitude", "latitude"],
+    get_text="zone_name",
+    get_size=14,
+    get_color=[255, 255, 255, 255],
+    get_text_anchor='"middle"',
+    get_alignment_baseline='"center"',
 )
 
 view_state = pdk.ViewState(
@@ -96,9 +102,9 @@ view_state = pdk.ViewState(
 )
 
 deck = pdk.Deck(
-    layers=[layer],
+    layers=[heatmap_layer, text_layer],
     initial_view_state=view_state,
-    map_style='mapbox://styles/mapbox/light-v10',
+    map_style='road',
     tooltip={
         "html": "<b style='font-size:16px'>{zone_name}</b><br/>"
                 "<b>Risk:</b> {risk_score}/100<br/>"
@@ -112,9 +118,10 @@ st.pydeck_chart(deck, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("🔴 **Extreme Risk (90-95)** | 🟠 **Very High Risk (85-90)** | 🟠 **High Risk (80-85)**")
+    st.markdown("🟥 **Dark Red = Extreme Risk** | 🟧 **Orange = High Risk** | 🟨 **Yellow = Moderate Risk**")
+    st.caption("Heatmap intensity shows fire risk concentration")
 with col2:
-    st.info("💡 Hover over circles for details")
+    st.info("💡 Hover over zones for details")
 
 st.divider()
 
@@ -201,6 +208,33 @@ st.divider()
 # What it means section
 st.markdown("### 🎯 What This Means For You")
 
+# Add new section about wildland-urban interface
+with st.expander("🏘️ **Understanding the Wildland-Urban Interface (WUI)**", expanded=True):
+    st.markdown("""
+    ### What Is the Wildland-Urban Interface?
+    
+    The Wildland-Urban Interface (WUI) is where houses and wildland vegetation meet. Think of it as the 
+    "edge" where neighborhoods bump up against forests, brush, and canyons.
+    
+    **Why It's Dangerous:**
+    
+    In these areas, your home becomes part of the fuel:
+    - **Embers travel** - Wind-blown embers can land on wood decks, in gutters, or near fences
+    - **Radiant heat** - The heat from nearby burning vegetation can ignite your home before flames arrive
+    - **Continuous fuel** - Brush touching your fence, trees over your roof create a path for fire
+    
+    **Real Examples from Southern California:**
+    
+    - **Paradise Fire (2018)** - 85 people died, mostly trapped on evacuation routes with only 1-2 exits
+    - **Woolsey Fire (2018, Malibu)** - Homes built in canyons with wooden decks burned when embers landed
+    - **Holy Fire (2018, Orange County)** - Hillside homes with no defensible space lost, while those with cleared space survived
+    
+    **The Pattern:** Communities built in beautiful canyons and hillsides look amazing, but they're built 
+    in the exact places that fires naturally burn. Add strong winds, and fires move faster than people can evacuate.
+    """)
+
+st.divider()
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -208,19 +242,29 @@ with col1:
     st.markdown("""
     1. **Know your zone's risk level** - Check the map above
     2. **Create defensible space** - Clear brush 100ft from your home
-    3. **Have an evacuation plan** - Know 2 ways out
-    4. **Sign up for alerts** - Get emergency notifications
-    5. **Prepare a go-bag** - Be ready to leave quickly
+    3. **Harden your home** - Replace wood roofs, cover vents, remove dead vegetation
+    4. **Have an evacuation plan** - Know 2 ways out, practice the route
+    5. **Sign up for alerts** - Get emergency notifications on your phone
+    6. **Prepare a go-bag** - Be ready to leave in 10 minutes
     """)
 
 with col2:
     st.markdown("#### Why These Zones Are High-Risk:")
     st.markdown("""
-    - **Santa Ana Winds** - Dry, powerful winds spread fires fast
-    - **Dense Vegetation** - Lots of fuel for fires
-    - **Mountain Terrain** - Fires move uphill quickly
-    - **Many Homes** - Built in fire-prone areas
-    - **History** - These areas have burned before
+    **Geography & Weather:**
+    - **Santa Ana Winds** - Hot, dry winds that can spread fires at 100+ mph
+    - **Mountain Canyons** - Act like chimneys, pushing fires uphill rapidly
+    - **Dense Vegetation** - Dry brush, chaparral, and forests fuel fires
+    
+    **How Communities Are Built:**
+    - **Homes in Wildlands** - Built directly in or next to fire-prone brush and forests
+    - **Narrow Canyon Roads** - Only one or two ways out, creating evacuation bottlenecks  
+    - **Wooden Decks & Roofs** - Construction materials that catch embers easily
+    - **No Defensible Space** - Houses surrounded by flammable vegetation within 30 feet
+    - **Remote Locations** - Far from fire stations, limited water for firefighting
+    
+    These areas are called the "Wildland-Urban Interface" - where homes meet wildland. 
+    **When fire comes, it burns both the forest AND the neighborhood together.**
     """)
 
 st.divider()
