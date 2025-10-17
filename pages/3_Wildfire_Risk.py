@@ -102,9 +102,9 @@ layer = pdk.Layer(
 )
 
 view_state = pdk.ViewState(
-    latitude=map_data['latitude'].mean(),
-    longitude=map_data['longitude'].mean(),
-    zoom=6,
+    latitude=34.0,
+    longitude=-118.0,
+    zoom=7,
     pitch=0
 )
 
