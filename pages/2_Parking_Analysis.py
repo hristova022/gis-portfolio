@@ -78,7 +78,7 @@ with tab3:
             selected_violation = st.selectbox(
                 "Filter by violation type",
                 violation_types,
-                key="violation_filter"
+                key="hotspot_violation_filter"
             )
             
             if selected_violation == 'All Violations':
