@@ -43,6 +43,15 @@ with col2:
     - **Data:** Pandas, NumPy
     - **Viz:** Streamlit, Plotly
     - **Cloud:** Colab, GitHub
+    - **AI Tools:** Claude AI, ChatGPT
+    
+    ### 🤖 Development Process
+    Built with assistance from:
+    - **Claude AI (Anthropic)** - Code development, data analysis
+    - **ChatGPT (OpenAI)** - Problem solving, ideation
+    
+    *This portfolio showcases technical skills in GIS and data science, 
+    with AI tools accelerating development and problem-solving.*
     
     ### 📊 Data Sources
     - OpenStreetMap
