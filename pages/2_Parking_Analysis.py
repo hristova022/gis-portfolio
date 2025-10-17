@@ -88,44 +88,43 @@ with tab1:
             """)
         
     with col_info:
-        st.markdown("### Map Features")
+        st.markdown("### Street Sweeping Schedule")
         
         st.markdown("""
-        **From Official Long Beach Map:**
+        **Map Legend (Official Long Beach):**
+        """)
         
-        🩷 **MON-TUE AREAS**
-        Various times (8-11am, 12:30-2:30pm)
+        # Match the exact official legend
+        col_a, col_b = st.columns([1, 3])
         
-        🟢 **MON-THU AREAS**  
-        1:30-3:30 PM
+        with col_a:
+            st.markdown("🩷")
+            st.markdown("🟢")
+            st.markdown("🟡")
+            st.markdown("🔵")
+            st.markdown("🟠")
         
-        🔵 **TUE-WED AREAS**
-        12:30-2:30 PM
+        with col_b:
+            st.markdown("**MON-TUE AREAS**")
+            st.markdown("**MON-THU AREAS**")
+            st.markdown("**TUE-WED AREAS**")
+            st.markdown("**WED-THU AREAS**")
+            st.markdown("**THU-FRI AREAS**")
         
-        🔵 **WED-THU AREAS**
-        8-10 AM
+        st.markdown("---")
         
-        🟣 **THU-FRI AREAS**
-        9-11 AM, 10-12 PM
-        
-        🟠 **VARIOUS SCHEDULES**
-        Different times by zone
+        st.markdown("""
+        **Additional Features:**
+        - 🔵 Blue lines = Streets swept before 8am
+        - Dotted areas = Schools & Parks
+        - Bold outline = City boundary
         
         ---
         
-        **Blue Lines** = Streets swept before 8am
-        
-        **Hatched Areas** = Schools, Parks, City Boundary
-        """)
-        
-        st.markdown("---")
-        st.markdown("""
         **Impact:**
-        
-        - 118,000+ sweeping tickets annually
+        - 118,000+ tickets/year
         - $68 per violation
-        - Must move car 2-4 times monthly
-        - Many areas have overlapping schedules
+        - Must move 2-4x monthly
         """)
     
     st.divider()
@@ -300,7 +299,7 @@ with tab3:
             )
             
             deck = pdk.Deck(
-                map_style='mapbox://styles/mapbox/dark-v11',
+                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
                 layers=[hotspot_layer],
                 initial_view_state=view_state,
                 tooltip={
