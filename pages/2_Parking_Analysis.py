@@ -8,7 +8,7 @@ st.set_page_config(page_title="Long Beach Parking Analysis", page_icon="🅿️"
 st.title("🅿️ Long Beach Parking Crisis Analysis")
 st.subheader("A Data-Driven Look at Why Finding Parking Feels Impossible")
 
-# Personal context box
+# Personal context
 with st.container():
     st.markdown("""
     ### Why This Analysis Matters
@@ -29,7 +29,7 @@ with st.container():
 
 st.divider()
 
-# Load ticket data for hero stats
+# Hero metrics
 try:
     df_tickets = pd.read_csv('data/parking_tickets_longbeach.csv')
     latest_year = df_tickets.iloc[-1]
@@ -39,27 +39,25 @@ try:
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Annual Parking Tickets", f"{latest_year['total_tickets']:,}", 
-                 help="Total parking citations issued in 2024")
+        st.metric("Annual Parking Tickets", f"{latest_year['total_tickets']:,}")
     with col2:
-        st.metric("Street Sweeping Tickets", f"{latest_year['street_sweeping']:,}",
-                 help="Half of all tickets are for street sweeping")
+        st.metric("Street Sweeping Tickets", f"{latest_year['street_sweeping']:,}")
     with col3:
         st.metric("5-Year Total", f"{total_5yr/1000:.0f}K tickets",
                  delta=f"+{((latest_year['total_tickets']/df_tickets.iloc[0]['total_tickets'])-1)*100:.0f}% since 2020",
                  delta_color="inverse")
     with col4:
-        st.metric("Est. Annual Revenue", f"${latest_year['total_tickets']*68/1000000:.1f}M",
-                 help="Based on $68 average ticket cost")
+        st.metric("Est. Annual Revenue", f"${latest_year['total_tickets']*68/1000000:.1f}M")
 except:
     pass
 
 st.divider()
 
-# Main tabs
+# MAIN TABS - Correct order
 tab1, tab2, tab3, tab4 = st.tabs(["🎫 Ticket Hotspots", "🧹 Street Sweeping", "🏢 Parking Structures", "📊 By Neighborhood"])
 
-with tab3:
+# TAB 1: TICKET HOTSPOTS
+with tab1:
     st.markdown("## Parking Ticket Hotspots")
     st.markdown("**Where tickets are issued most frequently**")
     
@@ -72,7 +70,6 @@ with tab3:
         
         with col_map:
             st.markdown("### Ticket Concentration Map")
-            st.caption("Larger circles = more tickets issued. Red = highest, Orange = medium, Yellow = lower")
             
             violation_types = ['All Violations'] + sorted(df_hotspots['primary_violation'].unique().tolist())
             selected_violation = st.selectbox(
@@ -103,28 +100,20 @@ with tab3:
                 get_line_color=[255, 255, 255]
             )
             
-            view_state = pdk.ViewState(
-                latitude=33.775,
-                longitude=-118.17,
-                zoom=11.5,
-                pitch=0
-            )
+            view_state = pdk.ViewState(latitude=33.775, longitude=-118.17, zoom=11.5)
             
             deck = pdk.Deck(
                 map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
                 layers=[hotspot_layer],
                 initial_view_state=view_state,
-                tooltip={
-                    'html': '<b>{tickets} tickets/year</b><br/>Top violation: {primary_violation}',
-                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                }
+                tooltip={'html': '<b>{tickets} tickets/year</b><br/>{primary_violation}'}
             )
             
             st.pydeck_chart(deck, height=500)
             st.caption("🔴 Red = 700+ tickets/year | 🟠 Orange = 500-700 | 🟡 Yellow = <500")
         
         with col_stats:
-            st.markdown("### Hotspot Statistics")
+            st.markdown("### Statistics")
             
             total_tickets = df_display['tickets'].sum()
             avg_per_spot = df_display['tickets'].mean()
@@ -132,8 +121,7 @@ with tab3:
             
             st.metric("Total Annual Tickets", f"{total_tickets:,}")
             st.metric("Avg per Hotspot", f"{avg_per_spot:.0f}")
-            st.metric("Worst Location", f"{worst_spot['tickets']} tickets",
-                     help=f"Primary violation: {worst_spot['primary_violation']}")
+            st.metric("Worst Location", f"{worst_spot['tickets']} tickets")
             
             st.markdown("---")
             st.markdown("### Top 5 Worst Spots")
@@ -142,189 +130,33 @@ with tab3:
             for idx, (_, row) in enumerate(top5.iterrows(), 1):
                 st.write(f"**#{idx}** - {row['tickets']} tickets/year")
                 st.caption(f"   {row['primary_violation']}")
-            
-            st.markdown("---")
-            st.markdown("### By Violation Type")
-            
-            violation_counts = df_hotspots.groupby('primary_violation')['tickets'].sum()
-            for violation, count in violation_counts.sort_values(ascending=False).items():
-                st.write(f"**{violation}:** {count:,}")
     
     except FileNotFoundError:
         st.warning("Loading hotspot data...")
-    
-    st.divider()
-    
-    st.markdown("""
-    ### Why This Matters
-    
-    **High-ticket zones tell us where parking policy fails residents:**
-    
-    - **Belmont Shore 2nd Street:** 920 tickets/year for expired meters means there aren't enough spaces for the demand
-    - **Downtown core:** 850+ tickets/year for street sweeping means residents have nowhere else to park
-    - **Concentrated hotspots:** When one block generates $60k+ in tickets, that's a policy problem, not a parking problem
-    
-    **The pattern is clear:** The city makes the most money from areas with the worst parking shortages. 
-    Instead of adding parking solutions, we ticket residents who have no alternatives.
-    
-    **Cost to residents in these hotspots:**
-    - Top hotspot area: ~$62,000/year from one location
-    - Average $68 per ticket
-    - Many residents get multiple tickets per year
-    - Disproportionately impacts those who can't afford garage parking
-    """)
 
-with tab3:
-    st.markdown("## Parking Ticket Hotspots")
-    st.markdown("**Where tickets are issued most frequently**")
-    
-    st.warning("⚠️ Some locations issue over 900 tickets per year - that's $61,000+ from a single block")
-    
-    try:
-        df_hotspots = pd.read_csv('data/parking_ticket_hotspots.csv')
-        
-        col_map, col_stats = st.columns([2, 1])
-        
-        with col_map:
-            st.markdown("### Ticket Concentration Map")
-            st.caption("Larger circles = more tickets issued. Red = highest, Orange = medium, Yellow = lower")
-            
-            violation_types = ['All Violations'] + sorted(df_hotspots['primary_violation'].unique().tolist())
-            selected_violation = st.selectbox(
-                "Filter by violation type",
-                violation_types,
-                key="violation_filter"
-            )
-            
-            if selected_violation == 'All Violations':
-                df_display = df_hotspots
-            else:
-                df_display = df_hotspots[df_hotspots['primary_violation'] == selected_violation]
-            
-            hotspot_layer = pdk.Layer(
-                'ScatterplotLayer',
-                data=df_display,
-                get_position='[lon, lat]',
-                get_color='color',
-                get_radius='size',
-                radius_scale=1,
-                radius_min_pixels=10,
-                radius_max_pixels=80,
-                pickable=True,
-                opacity=0.7,
-                stroked=True,
-                filled=True,
-                line_width_min_pixels=2,
-                get_line_color=[255, 255, 255]
-            )
-            
-            view_state = pdk.ViewState(
-                latitude=33.775,
-                longitude=-118.17,
-                zoom=11.5,
-                pitch=0
-            )
-            
-            deck = pdk.Deck(
-                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-                layers=[hotspot_layer],
-                initial_view_state=view_state,
-                tooltip={
-                    'html': '<b>{tickets} tickets/year</b><br/>Top violation: {primary_violation}',
-                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                }
-            )
-            
-            st.pydeck_chart(deck, height=500)
-            st.caption("🔴 Red = 700+ tickets/year | 🟠 Orange = 500-700 | 🟡 Yellow = <500")
-        
-        with col_stats:
-            st.markdown("### Hotspot Statistics")
-            
-            total_tickets = df_display['tickets'].sum()
-            avg_per_spot = df_display['tickets'].mean()
-            worst_spot = df_display.nlargest(1, 'tickets').iloc[0]
-            
-            st.metric("Total Annual Tickets", f"{total_tickets:,}")
-            st.metric("Avg per Hotspot", f"{avg_per_spot:.0f}")
-            st.metric("Worst Location", f"{worst_spot['tickets']} tickets",
-                     help=f"Primary violation: {worst_spot['primary_violation']}")
-            
-            st.markdown("---")
-            st.markdown("### Top 5 Worst Spots")
-            
-            top5 = df_display.nlargest(5, 'tickets')
-            for idx, (_, row) in enumerate(top5.iterrows(), 1):
-                st.write(f"**#{idx}** - {row['tickets']} tickets/year")
-                st.caption(f"   {row['primary_violation']}")
-            
-            st.markdown("---")
-            st.markdown("### By Violation Type")
-            
-            violation_counts = df_hotspots.groupby('primary_violation')['tickets'].sum()
-            for violation, count in violation_counts.sort_values(ascending=False).items():
-                st.write(f"**{violation}:** {count:,}")
-    
-    except FileNotFoundError:
-        st.warning("Loading hotspot data...")
-    
-    st.divider()
-    
-    st.markdown("""
-    ### Why This Matters
-    
-    **High-ticket zones tell us where parking policy fails residents:**
-    
-    - **Belmont Shore 2nd Street:** 920 tickets/year for expired meters means there aren't enough spaces for the demand
-    - **Downtown core:** 850+ tickets/year for street sweeping means residents have nowhere else to park
-    - **Concentrated hotspots:** When one block generates $60k+ in tickets, that's a policy problem, not a parking problem
-    
-    **The pattern is clear:** The city makes the most money from areas with the worst parking shortages. 
-    Instead of adding parking solutions, we ticket residents who have no alternatives.
-    
-    **Cost to residents in these hotspots:**
-    - Top hotspot area: ~$62,000/year from one location
-    - Average $68 per ticket
-    - Many residents get multiple tickets per year
-    - Disproportionately impacts those who can't afford garage parking
-    """)
-
-with tab1:
+# TAB 2: STREET SWEEPING
+with tab2:
     st.markdown("## Street Sweeping Impact")
     st.markdown("**The biggest cause of parking tickets and lost spaces**")
     
-    st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
+    st.warning("⚠️ Street sweeping removes hundreds of spaces daily, forcing residents to find alternatives or risk $68 tickets")
     
     col_map, col_info = st.columns([2, 1])
     
     with col_map:
         st.markdown("### Street Sweeping Schedule Map")
-        st.caption("Official Long Beach Public Works street sweeping zones")
+        st.caption("Official Long Beach Public Works zones")
         
-        # Display the official map image directly
         if os.path.exists('data/street_sweeping_official.png'):
             st.image('data/street_sweeping_official.png',
-                    caption="Official Long Beach Street Sweeping Schedule - Phase 1",
+                    caption="Official Long Beach Street Sweeping Schedule",
                     use_container_width=True)
-            
         else:
-            st.warning("⚠️ Official map image not found")
-            st.info("""
-            To add the official map:
-            1. Go to: https://github.com/hristova022/gis-portfolio/tree/main/data
-            2. Click "Add file" → "Upload files"
-            3. Upload your street sweeping map image as 'street_sweeping_official.png'
-            4. Commit
-            """)
-        
+            st.warning("Map image not found")
+    
     with col_info:
-        st.markdown("### Street Sweeping Schedule")
+        st.markdown("### Schedule Legend")
         
-        st.markdown("""
-        **Map Legend (Official Long Beach):**
-        """)
-        
-        # Match the exact official legend
         col_a, col_b = st.columns([1, 3])
         
         with col_a:
@@ -342,37 +174,27 @@ with tab1:
             st.markdown("**THU-FRI AREAS**")
         
         st.markdown("---")
-        
         st.markdown("""
-        **Additional Features:**
-        - 🔵 Blue lines = Streets swept before 8am
-        - Dotted areas = Schools & Parks
-        - Bold outline = City boundary
-        
-        ---
-        
         **Impact:**
         - 118,000+ tickets/year
         - $68 per violation
-        - Must move 2-4x monthly
+        - Move car 2-4x monthly
         """)
     
     st.divider()
     
     st.markdown("""
-    ### Real Impact on Residents
+    ### Real Impact
     
-    **Downtown:** Multiple days per week. If you work from home or have a flexible schedule, you're constantly 
-    moving your car. If you have a 9-5 job, you either pay for garage parking or circle endlessly after work.
+    **Downtown:** Constant car moving. Either pay for garage parking or circle endlessly after work.
     
-    **Belmont Shore:** Regular sweeping in the tourist area with already limited parking loses even more 
-    spaces. Weekend visitors often don't know about sweeping schedules and get ticketed.
+    **Belmont Shore:** Tourist area loses even more spaces. Visitors get ticketed without knowing schedules.
     
-    **The Result:** Over 118,000 street sweeping tickets issued in 2024 alone. That's $8 million from residents who 
-    often had no other legal place to park their car.
+    **The Result:** Over 118,000 street sweeping tickets in 2024 = $8 million from residents with nowhere else to park.
     """)
 
-with tab2:
+# TAB 3: PARKING STRUCTURES
+with tab3:
     st.markdown("## Parking Structure Locations")
     st.markdown("**Where can you actually find covered parking?**")
     
@@ -392,7 +214,7 @@ with tab2:
                 
                 if len(df_struct) > 0:
                     df_struct['color'] = [[255, 140, 0, 220]] * len(df_struct)
-                    struct_layer = pdk.Layer(
+                    all_layers.append(pdk.Layer(
                         'ScatterplotLayer',
                         data=df_struct,
                         get_position='[lon, lat]',
@@ -405,12 +227,11 @@ with tab2:
                         stroked=True,
                         get_line_color=[255, 255, 255],
                         line_width_min_pixels=2
-                    )
-                    all_layers.append(struct_layer)
+                    ))
                 
                 if len(df_lots) > 0:
                     df_lots['color'] = [[100, 200, 100, 200]] * len(df_lots)
-                    lots_layer = pdk.Layer(
+                    all_layers.append(pdk.Layer(
                         'ScatterplotLayer',
                         data=df_lots,
                         get_position='[lon, lat]',
@@ -420,27 +241,16 @@ with tab2:
                         radius_max_pixels=25,
                         pickable=True,
                         filled=True
-                    )
-                    all_layers.append(lots_layer)
-                
-                view_state = pdk.ViewState(
-                    latitude=33.77,
-                    longitude=-118.19,
-                    zoom=12,
-                    pitch=0
-                )
+                    ))
                 
                 deck = pdk.Deck(
                     layers=all_layers,
-                    initial_view_state=view_state,
-                    tooltip={
-                        'html': '<b>{name}</b><br/>{neighborhood}<br/>Capacity: {capacity}<br/>Rate: {rate}',
-                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
-                    }
+                    initial_view_state=pdk.ViewState(latitude=33.77, longitude=-118.19, zoom=12),
+                    tooltip={'html': '<b>{name}</b><br/>{neighborhood}<br/>Capacity: {capacity}<br/>Rate: {rate}'}
                 )
                 
                 st.pydeck_chart(deck)
-                st.caption("🟠 Large orange circles = Multi-level parking structures | 🟢 Smaller green circles = Surface parking lots | Hover for details")
+                st.caption("🟠 Orange = Structures | 🟢 Green = Surface Lots")
             
             with col2:
                 st.markdown("### Summary")
@@ -461,105 +271,23 @@ with tab2:
                     hood_data = df_structures[df_structures['neighborhood'] == hood]
                     hood_capacity = hood_data['capacity'].sum()
                     st.write(f"**{hood}:** {len(hood_data)} facilities")
-                    st.caption(f"   {hood_capacity:,} total spaces")
+                    st.caption(f"   {hood_capacity:,} spaces")
         
         st.divider()
         
         st.markdown("""
         ### The Reality
-        - **Downtown has the most structures** (5 facilities, 1,850 spaces) but also the highest demand
-        - **Belmont Shore has only 2 small lots** (330 spaces) for one of the busiest areas
-        - **Many neighborhoods have ZERO parking structures** - residents rely entirely on street parking
-        - **Weekend and evening occupancy often exceeds 90%** - finding a spot is like winning the lottery
-        - **Paid parking creates inequity** - wealthier residents can afford structures while others circle or get ticketed
+        - Downtown has most structures but highest demand
+        - Belmont Shore has only 2 small lots for busiest area
+        - Many neighborhoods have ZERO structures
+        - Weekend/evening occupancy exceeds 90%
+        - Paid parking creates inequity
         """)
             
     except FileNotFoundError:
         st.warning("Loading structure data...")
 
-with tab1:
-    st.markdown("## Street Sweeping Impact")
-    st.markdown("**The biggest cause of parking tickets and lost spaces**")
-    
-    st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
-    
-    col_map, col_info = st.columns([2, 1])
-    
-    with col_map:
-        st.markdown("### Street Sweeping Schedule Map")
-        st.caption("Official Long Beach Public Works street sweeping zones")
-        
-        # Display the official map image directly
-        if os.path.exists('data/street_sweeping_official.png'):
-            st.image('data/street_sweeping_official.png',
-                    caption="Official Long Beach Street Sweeping Schedule - Phase 1",
-                    use_container_width=True)
-            
-        else:
-            st.warning("⚠️ Official map image not found")
-            st.info("""
-            To add the official map:
-            1. Go to: https://github.com/hristova022/gis-portfolio/tree/main/data
-            2. Click "Add file" → "Upload files"
-            3. Upload your street sweeping map image as 'street_sweeping_official.png'
-            4. Commit
-            """)
-        
-    with col_info:
-        st.markdown("### Street Sweeping Schedule")
-        
-        st.markdown("""
-        **Map Legend (Official Long Beach):**
-        """)
-        
-        # Match the exact official legend
-        col_a, col_b = st.columns([1, 3])
-        
-        with col_a:
-            st.markdown("🩷")
-            st.markdown("🟢")
-            st.markdown("🟡")
-            st.markdown("🔵")
-            st.markdown("🟠")
-        
-        with col_b:
-            st.markdown("**MON-TUE AREAS**")
-            st.markdown("**MON-THU AREAS**")
-            st.markdown("**TUE-WED AREAS**")
-            st.markdown("**WED-THU AREAS**")
-            st.markdown("**THU-FRI AREAS**")
-        
-        st.markdown("---")
-        
-        st.markdown("""
-        **Additional Features:**
-        - 🔵 Blue lines = Streets swept before 8am
-        - Dotted areas = Schools & Parks
-        - Bold outline = City boundary
-        
-        ---
-        
-        **Impact:**
-        - 118,000+ tickets/year
-        - $68 per violation
-        - Must move 2-4x monthly
-        """)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### Real Impact on Residents
-    
-    **Downtown:** Multiple days per week. If you work from home or have a flexible schedule, you're constantly 
-    moving your car. If you have a 9-5 job, you either pay for garage parking or circle endlessly after work.
-    
-    **Belmont Shore:** Regular sweeping in the tourist area with already limited parking loses even more 
-    spaces. Weekend visitors often don't know about sweeping schedules and get ticketed.
-    
-    **The Result:** Over 118,000 street sweeping tickets issued in 2024 alone. That's $8 million from residents who 
-    often had no other legal place to park their car.
-    """)
-
+# TAB 4: BY NEIGHBORHOOD
 with tab4:
     st.markdown("## Neighborhood Breakdown")
     st.markdown("**Which areas have it worst?**")
@@ -587,12 +315,7 @@ with tab4:
             textposition='auto'
         ))
         
-        fig.update_layout(
-            xaxis_title='Parking Availability Score',
-            yaxis_title='',
-            height=400,
-            showlegend=False
-        )
+        fig.update_layout(xaxis_title='Parking Score', yaxis_title='', height=400, showlegend=False)
         
         st.plotly_chart(fig, use_container_width=True)
         
@@ -602,50 +325,9 @@ with tab4:
         
         display_df = df_combined[['neighborhood', 'density', 'parking', 'structures', 
                                   'tickets_per_year', 'avg_wait_time']].copy()
-        display_df.columns = ['Neighborhood', 'Population Density', 'Parking Situation', 
-                              'Structure Access', 'Annual Tickets', 'Avg. Wait Time']
+        display_df.columns = ['Neighborhood', 'Density', 'Parking', 'Structures', 'Tickets/Year', 'Wait Time']
         
         st.dataframe(display_df, use_container_width=True, hide_index=True)
-        
-        st.divider()
-        
-        st.markdown("### Worst Areas Explained")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            **🔴 Belmont Shore (Score: 25)**
-            - Tourist destination with narrow streets
-            - Only 2 small parking lots
-            - Street sweeping removes key spaces Tue/Fri
-            - Weekend demand from visitors overwhelms supply
-            - 38,000 tickets per year - mostly overtime violations
-            
-            **🔴 Downtown (Score: 35)**
-            - Mix of business and residential creates all-day demand
-            - Structures fill up by 5pm
-            - Street sweeping Mon/Thu removes 300+ spaces
-            - Event parking makes it unpredictable
-            - 45,000 tickets per year - highest in the city
-            """)
-        
-        with col2:
-            st.markdown("""
-            **🔴 Alamitos Beach (Score: 30)**
-            - Very high residential density
-            - Beach visitor overflow
-            - Minimal structure capacity
-            - Apartments have insufficient parking
-            - 32,000 tickets per year
-            
-            **🟢 California Heights (Score: 70)**
-            - Lower density residential
-            - Wider streets with more spaces
-            - Less competition from commercial/tourist traffic
-            - Minimal street sweeping impact
-            - Only 12,000 tickets per year
-            """)
         
     except:
         st.warning("Loading neighborhood data...")
@@ -658,46 +340,40 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("""
-    ### Short-Term Solutions
-    - Reform street sweeping schedules
-    - Add evening/weekend only sweeping
-    - Create permit zones for residents
-    - Add digital parking availability signs
-    - Reduce ticket fines for first violations
+    ### Short-Term
+    - Reform sweeping schedules
+    - Add evening/weekend sweeping
+    - Create permit zones
+    - Digital availability signs
     """)
 
 with col2:
     st.markdown("""
-    ### Medium-Term Solutions
-    - Build more parking structures in high-need areas
-    - Convert underutilized lots to parking
-    - Improve public transit to reduce car dependency
+    ### Medium-Term
+    - Build more structures
+    - Convert underutilized lots
+    - Improve public transit
     - Add bike infrastructure
-    - Implement smart parking meters
     """)
 
 with col3:
     st.markdown("""
-    ### Long-Term Solutions
+    ### Long-Term
     - Require parking in new developments
     - Incentivize reduced car ownership
     - Expand Metro connectivity
-    - Mixed-use development with parking
     - Regional parking planning
     """)
 
 st.divider()
 
 st.markdown("""
-## 📊 Data Sources & Methods
+## 📊 Data Sources
 
-This analysis combines multiple data sources:
-- **Street Sweeping:** Long Beach ArcGIS Open Data (official city data)
+- **Street Sweeping:** Long Beach Public Works official map
 - **Parking Structures:** OpenStreetMap + field verification
-- **Parking Tickets:** Long Beach City financial reports
+- **Tickets:** Long Beach City financial reports
 - **Demographics:** US Census Bureau
 
-All visualizations and analysis performed using Python, GeoPandas, Pydeck, and Streamlit.
+Analysis by Luba Hristova | Long Beach Resident & GIS Analyst
 """)
-
-st.caption("Analysis by Luba Hristova | Long Beach Resident & GIS Analyst")
