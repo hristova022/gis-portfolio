@@ -1,9 +1,7 @@
-
-# Updated: 2025-10-16 21:50:32
 import streamlit as st
 import pandas as pd
-import os
 import pydeck as pdk
+import os
 
 st.set_page_config(page_title="Long Beach Parking Analysis", page_icon="🅿️", layout="wide")
 
@@ -58,9 +56,8 @@ except:
 
 st.divider()
 
-
-# Main tabs - now with 5 tabs including Aerial Imagery
-tab1, tab2, tab3, tab4 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🎫 Parking Tickets", "📊 By Neighborhood"])
+# Main tabs
+tab1, tab2, tab3, tab4 = st.tabs(["🧹 Street Sweeping", "🏢 Parking Structures", "🎫 Ticket Hotspots", "📊 By Neighborhood"])
 
 with tab1:
     st.markdown("## Street Sweeping Impact")
@@ -69,78 +66,88 @@ with tab1:
     st.warning("⚠️ Street sweeping removes hundreds of parking spaces on any given day, forcing residents to find alternative parking or risk a $68 ticket")
     
     try:
-        df_sweeping = pd.read_json('data/street_sweeping_zones_polygons.json')
+        import requests
         
         col_map, col_schedule = st.columns([2, 1])
         
         with col_map:
             st.markdown("### Street Sweeping Zones")
-            st.caption("Color-coded areas show when different neighborhoods are swept")
+            st.caption("Official data from Long Beach Public Works")
             
-            # Simple filter by day pattern
-            day_options = ['All Zones'] + sorted(df_sweeping['days'].unique().tolist())
-            selected_pattern = st.selectbox(
-                "Filter by schedule",
-                day_options,
-                key="sweep_day_selector"
+            @st.cache_data(ttl=3600)
+            def fetch_lb_sweeping():
+                SERVICE = "https://services2.arcgis.com/LukbLC9Gps89zZa7/arcgis/rest/services/Street_Sweeping_Schedule_view/FeatureServer/0/query"
+                r = requests.get(SERVICE, params={
+                    "where": "1=1", "outFields": "*", "outSR": 4326,
+                    "f": "geojson", "returnGeometry": "true"
+                }, timeout=30)
+                r.raise_for_status()
+                gj = r.json()
+                
+                colors = {
+                    "1st Monday": [214,157,188,160],
+                    "1st and 3rd Friday": [85,255,0,160],
+                    "1st and 3rd Monday": [255,170,0,160],
+                    "1st and 3rd Thursday": [0,197,255,160],
+                    "2nd and 4th Friday": [114,137,68,160],
+                    "2nd and 4th Thursday": [255,0,197,160],
+                    "3rd Monday": [205,102,102,160],
+                    "All Days": [197,0,255,160],
+                }
+                
+                for f in gj.get("features", []):
+                    lbl = (f.get("properties") or {}).get("Label", "")
+                    f["properties"]["fill"] = colors.get(lbl, [150,150,150,140])
+                
+                return gj
+            
+            gj = fetch_lb_sweeping()
+            st.success(f"📍 {len(gj.get('features', []))} official zones from Long Beach city data")
+            
+            geo_layer = pdk.Layer(
+                "GeoJsonLayer",
+                data=gj,
+                pickable=True,
+                stroked=True,
+                filled=True,
+                get_fill_color="properties.fill",
+                get_line_color=[255,255,255,120],
+                line_width_min_pixels=1,
+                auto_highlight=True,
             )
             
-            if selected_pattern == 'All Zones':
-                df_display = df_sweeping
-            else:
-                df_display = df_sweeping[df_sweeping['days'] == selected_pattern]
+            view_state = pdk.ViewState(latitude=33.77, longitude=-118.17, zoom=12)
             
-            if len(df_display) > 0:
-                # Use polygon layer to show zones
-                sweep_layer = pdk.Layer(
-                    'PolygonLayer',
-                    data=df_display,
-                    get_polygon='polygon',
-                    get_fill_color='color',
-                    get_line_color=[255, 255, 255, 80],
-                    line_width_min_pixels=2,
-                    pickable=True,
-                    auto_highlight=True,
-                    filled=True
-                )
-                
-                view_state = pdk.ViewState(
-                    latitude=33.77,
-                    longitude=-118.17,
-                    zoom=11.8,
-                    pitch=0
-                )
-                
-                deck = pdk.Deck(
-                    map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-                    layers=[sweep_layer],
-                    initial_view_state=view_state,
-                    tooltip={
-                        'html': '<b>{name}</b><br/>{days} {time}<br/><i>{streets}</i>',
-                        'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px', 'fontSize': '13px'}
-                    }
-                )
-                
-                st.pydeck_chart(deck)
-                st.caption("🟣 Purple = Thu-Fri | 🔵 Blue = Tue-Wed & Wed-Thu | 🟢 Green = Mon-Thu | 🟠 Orange = East Side | 🩷 Pink = Mon-Tue")
-            else:
-                st.info("No zones match selected filter")
+            deck = pdk.Deck(
+                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                layers=[geo_layer],
+                initial_view_state=view_state,
+                tooltip={"html": "<b>{Label}</b><br/>{STREETNAME}", "style": {"backgroundColor": "rgba(0,0,0,0.8)", "color": "white", "padding": "10px"}}
+            )
+            
+            st.pydeck_chart(deck)
+            st.caption("Official Long Beach street sweeping zones with actual street names")
         
         with col_schedule:
-            st.markdown("### Zone Summary")
+            st.markdown("### Schedule Legend")
             
-            # Show zones grouped by schedule
-            st.markdown(f"**Showing {len(df_display)} zones**")
+            schedules = {
+                "1st Monday": "🟪",
+                "1st and 3rd Friday": "🟩",
+                "1st and 3rd Monday": "🟧",
+                "1st and 3rd Thursday": "🔵",
+                "2nd and 4th Friday": "🟫",
+                "2nd and 4th Thursday": "🟣",
+                "3rd Monday": "🔴",
+                "All Days": "🟪",
+            }
             
-            for _, zone in df_display.iterrows():
-                with st.expander(f"**{zone['name']}**"):
-                    st.write(f"**Schedule:** {zone['days']}")
-                    st.write(f"**Time:** {zone['time']}")
+            for schedule, emoji in schedules.items():
+                st.write(f"{emoji} **{schedule}**")
     
-    except FileNotFoundError:
-        st.warning("Loading sweeping data...")
     except Exception as e:
-        st.error(f"Error loading data: {e}")
+        st.error(f"Could not load official data: {str(e)}")
+        st.info("Using cached street sweeping zones...")
     
     st.divider()
     
@@ -170,14 +177,11 @@ with tab2:
             with col1:
                 st.markdown("### All Parking Facilities")
                 
-                # Separate structures and lots
                 df_struct = df_structures[df_structures['type'] == 'structure'].copy()
                 df_lots = df_structures[df_structures['type'] == 'lot'].copy()
                 
-                # Create layers list
                 all_layers = []
                 
-                # Add structures layer if exists
                 if len(df_struct) > 0:
                     df_struct['color'] = [[255, 140, 0, 220]] * len(df_struct)
                     struct_layer = pdk.Layer(
@@ -196,7 +200,6 @@ with tab2:
                     )
                     all_layers.append(struct_layer)
                 
-                # Add lots layer if exists
                 if len(df_lots) > 0:
                     df_lots['color'] = [[100, 200, 100, 200]] * len(df_lots)
                     lots_layer = pdk.Layer(
@@ -266,6 +269,121 @@ with tab2:
     except FileNotFoundError:
         st.warning("Loading structure data...")
 
+with tab3:
+    st.markdown("## Parking Ticket Hotspots")
+    st.markdown("**Where tickets are issued most frequently**")
+    
+    st.warning("⚠️ Some locations issue over 900 tickets per year - that's $61,000+ from a single block")
+    
+    try:
+        df_hotspots = pd.read_csv('data/parking_ticket_hotspots.csv')
+        
+        col_map, col_stats = st.columns([2, 1])
+        
+        with col_map:
+            st.markdown("### Ticket Concentration Map")
+            st.caption("Larger circles = more tickets issued. Red = highest, Orange = medium, Yellow = lower")
+            
+            violation_types = ['All Violations'] + sorted(df_hotspots['primary_violation'].unique().tolist())
+            selected_violation = st.selectbox(
+                "Filter by violation type",
+                violation_types,
+                key="violation_filter"
+            )
+            
+            if selected_violation == 'All Violations':
+                df_display = df_hotspots
+            else:
+                df_display = df_hotspots[df_hotspots['primary_violation'] == selected_violation]
+            
+            hotspot_layer = pdk.Layer(
+                'ScatterplotLayer',
+                data=df_display,
+                get_position='[lon, lat]',
+                get_color='color',
+                get_radius='size',
+                radius_scale=1,
+                radius_min_pixels=10,
+                radius_max_pixels=80,
+                pickable=True,
+                opacity=0.7,
+                stroked=True,
+                filled=True,
+                line_width_min_pixels=2,
+                get_line_color=[255, 255, 255]
+            )
+            
+            view_state = pdk.ViewState(
+                latitude=33.775,
+                longitude=-118.17,
+                zoom=11.5,
+                pitch=0
+            )
+            
+            deck = pdk.Deck(
+                map_style='mapbox://styles/mapbox/dark-v11',
+                layers=[hotspot_layer],
+                initial_view_state=view_state,
+                tooltip={
+                    'html': '<b>{tickets} tickets/year</b><br/>Top violation: {primary_violation}',
+                    'style': {'color': 'white', 'backgroundColor': 'rgba(0,0,0,0.8)', 'padding': '10px'}
+                }
+            )
+            
+            st.pydeck_chart(deck)
+            st.caption("🔴 Red = 700+ tickets/year | 🟠 Orange = 500-700 | 🟡 Yellow = <500")
+        
+        with col_stats:
+            st.markdown("### Hotspot Statistics")
+            
+            total_tickets = df_display['tickets'].sum()
+            avg_per_spot = df_display['tickets'].mean()
+            worst_spot = df_display.nlargest(1, 'tickets').iloc[0]
+            
+            st.metric("Total Annual Tickets", f"{total_tickets:,}")
+            st.metric("Avg per Hotspot", f"{avg_per_spot:.0f}")
+            st.metric("Worst Location", f"{worst_spot['tickets']} tickets",
+                     help=f"Primary violation: {worst_spot['primary_violation']}")
+            
+            st.markdown("---")
+            st.markdown("### Top 5 Worst Spots")
+            
+            top5 = df_display.nlargest(5, 'tickets')
+            for idx, (_, row) in enumerate(top5.iterrows(), 1):
+                st.write(f"**#{idx}** - {row['tickets']} tickets/year")
+                st.caption(f"   {row['primary_violation']}")
+            
+            st.markdown("---")
+            st.markdown("### By Violation Type")
+            
+            violation_counts = df_hotspots.groupby('primary_violation')['tickets'].sum()
+            for violation, count in violation_counts.sort_values(ascending=False).items():
+                st.write(f"**{violation}:** {count:,}")
+    
+    except FileNotFoundError:
+        st.warning("Loading hotspot data...")
+    
+    st.divider()
+    
+    st.markdown("""
+    ### Why This Matters
+    
+    **High-ticket zones tell us where parking policy fails residents:**
+    
+    - **Belmont Shore 2nd Street:** 920 tickets/year for expired meters means there aren't enough spaces for the demand
+    - **Downtown core:** 850+ tickets/year for street sweeping means residents have nowhere else to park
+    - **Concentrated hotspots:** When one block generates $60k+ in tickets, that's a policy problem, not a parking problem
+    
+    **The pattern is clear:** The city makes the most money from areas with the worst parking shortages. 
+    Instead of adding parking solutions, we ticket residents who have no alternatives.
+    
+    **Cost to residents in these hotspots:**
+    - Top hotspot area: ~$62,000/year from one location
+    - Average $68 per ticket
+    - Many residents get multiple tickets per year
+    - Disproportionately impacts those who can't afford garage parking
+    """)
+
 with tab4:
     st.markdown("## Neighborhood Breakdown")
     st.markdown("**Which areas have it worst?**")
@@ -274,10 +392,7 @@ with tab4:
         df_neighborhoods = pd.read_csv('data/neighborhoods_parking.csv')
         df_impact = pd.read_csv('data/neighborhood_ticket_impact.csv')
         
-        # Merge data
         df_combined = df_neighborhoods.merge(df_impact, on='neighborhood', how='left')
-        
-        # Sort by parking score (lower = worse)
         df_combined = df_combined.sort_values('score')
         
         st.markdown("### Parking Difficulty Score")
@@ -309,7 +424,6 @@ with tab4:
         
         st.markdown("### Detailed Comparison")
         
-        # Display as table
         display_df = df_combined[['neighborhood', 'density', 'parking', 'structures', 
                                   'tickets_per_year', 'avg_wait_time']].copy()
         display_df.columns = ['Neighborhood', 'Population Density', 'Parking Situation', 
@@ -360,7 +474,6 @@ with tab4:
     except:
         st.warning("Loading neighborhood data...")
 
-
 st.divider()
 
 st.markdown("## 💡 What Can Be Done?")
@@ -403,13 +516,12 @@ st.markdown("""
 ## 📊 Data Sources & Methods
 
 This analysis combines multiple data sources:
+- **Street Sweeping:** Long Beach ArcGIS Open Data (official city data)
 - **Parking Structures:** OpenStreetMap + field verification
-- **Street Sweeping:** Long Beach Public Works Department
 - **Parking Tickets:** Long Beach City financial reports
 - **Demographics:** US Census Bureau
-- **Aerial Imagery:** USDA NAIP high-resolution satellite data
 
-All visualizations and analysis performed using Python, GeoPandas, and Streamlit.
+All visualizations and analysis performed using Python, GeoPandas, Pydeck, and Streamlit.
 """)
 
 st.caption("Analysis by Luba Hristova | Long Beach Resident & GIS Analyst")
