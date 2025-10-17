@@ -88,32 +88,44 @@ with tab1:
             """)
         
     with col_info:
-        st.markdown("### Map Legend")
+        st.markdown("### Map Features")
         
         st.markdown("""
-        **Street Sweeping Times:**
+        **From Official Long Beach Map:**
         
-        🩷 **Pink** = Mon-Tue (12:30-2:30 PM)
+        🩷 **MON-TUE AREAS**
+        Various times (8-11am, 12:30-2:30pm)
         
-        🟢 **Green** = Mon-Thu (1:30-3:30 PM)
+        🟢 **MON-THU AREAS**  
+        1:30-3:30 PM
         
-        🔵 **Cyan/Blue** = Tue-Wed (12:30-2:30 PM)
+        🔵 **TUE-WED AREAS**
+        12:30-2:30 PM
         
-        🔵 **Dark Blue** = Wed-Thu (8-10 AM)
+        🔵 **WED-THU AREAS**
+        8-10 AM
         
-        🟣 **Purple** = Thu-Fri (9-11 AM)
+        🟣 **THU-FRI AREAS**
+        9-11 AM, 10-12 PM
         
-        🟠 **Orange** = Various (8-10 AM, 10-12 PM, 1:30-3:30 PM)
+        🟠 **VARIOUS SCHEDULES**
+        Different times by zone
+        
+        ---
+        
+        **Blue Lines** = Streets swept before 8am
+        
+        **Hatched Areas** = Schools, Parks, City Boundary
         """)
         
         st.markdown("---")
         st.markdown("""
-        **Why This Matters:**
+        **Impact:**
         
-        - Streets shown in color require moving your car
-        - Sweeping typically happens monthly
-        - Tickets are $68 per violation
-        - Over 118,000 sweeping tickets issued annually
+        - 118,000+ sweeping tickets annually
+        - $68 per violation
+        - Must move car 2-4 times monthly
+        - Many areas have overlapping schedules
         """)
     
     st.divider()
