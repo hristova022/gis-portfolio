@@ -2,81 +2,80 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import plotly.express as px
-import plotly.graph_objects as go
+import json
 
 st.set_page_config(page_title="SoCal Wildfire Risk", page_icon="🔥", layout="wide")
 
-st.title("🔥 Southern California Wildfire Risk Analysis")
-st.subheader("Past, Present & Future: A Comprehensive Assessment")
+st.title("🔥 Southern California Wildfire Risk Zones")
+st.subheader("8 High-Risk Areas: A Clear, Simple View")
 
 @st.cache_data
 def load_data():
     zones_url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_zones.csv"
+    summary_url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_summary.csv"
+    detail_url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_zones_detailed.json"
+    
     zones = pd.read_csv(zones_url)
-    return zones
+    summary = pd.read_csv(summary_url)
+    
+    import requests
+    details = requests.get(detail_url).json()
+    
+    return zones, summary, details
 
-zones = load_data()
+zones, summary, details = load_data()
 
-# Story introduction
+# Simple introduction
 with st.container():
     st.markdown("""
-    ### 🔥 The Story of Southern California Wildfire Risk
+    ### Why This Analysis Matters
     
-    Southern California faces one of the highest wildfire risks in the nation. This analysis combines:
+    Southern California has **8 major wildfire risk zones** - areas where fires happen repeatedly due to geography, 
+    weather patterns, and how communities are built.
     
-    **📊 PAST** - Historical fire data (2020-2024) from NASA satellites and major fire perimeters  
-    **🔴 PRESENT** - Current fire activity and recent detection patterns  
-    **🔮 FUTURE** - Predictive factors including Santa Ana winds, drought conditions, and wildland-urban interface zones
+    This map shows **WHERE** the risk is highest and **WHY** each area is dangerous.
     
-    **Key Risk Factors:**
-    - 🌬️ **Santa Ana Winds** - Dry, powerful winds that spread fires rapidly
-    - 🌿 **Dense Chaparral** - Fire-prone vegetation that hasn't burned in years
-    - 🏘️ **Wildland-Urban Interface** - Where homes meet wildland (highest impact zones)
-    - 🌡️ **Climate Stress** - Prolonged drought and rising temperatures
+    **No technical jargon. Just clear information.**
     """)
 
 st.divider()
 
-# Filters
-st.sidebar.header("🎛️ Risk Filters")
-risk_threshold = st.sidebar.slider("Minimum Risk Score", 0, 100, 40, 5)
-fire_count_min = st.sidebar.number_input("Minimum Historical Events", 1, 50, 3)
-
-filtered = zones[(zones['avg_risk'] >= risk_threshold) & (zones['fire_count'] >= fire_count_min)]
-
-# Key metrics
-col1, col2, col3, col4 = st.columns(4)
+# Simple stats
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("Risk Zones Analyzed", f"{len(zones):,}")
+    total_homes = summary['homes_at_risk'].sum()
+    st.metric("🏠 Homes at Risk", f"{total_homes:,}")
 
 with col2:
-    extreme_risk = len(zones[zones['avg_risk'] >= 70])
-    st.metric("Extreme Risk Zones", extreme_risk, 
-              delta=f"{(extreme_risk/len(zones)*100):.0f}% of total")
+    extreme_zones = len(summary[summary['risk_score'] >= 90])
+    st.metric("🚨 Extreme Risk Zones", f"{extreme_zones} out of 8")
 
 with col3:
-    high_risk = len(zones[zones['avg_risk'] >= 50])
-    st.metric("High+ Risk Zones", high_risk)
-
-with col4:
-    avg_risk = zones['avg_risk'].mean()
-    st.metric("Average Risk Score", f"{avg_risk:.1f}/100")
+    avg_risk = summary['risk_score'].mean()
+    st.metric("📊 Average Risk Level", f"{avg_risk:.0f}/100")
 
 st.divider()
 
-# Interactive map
-st.markdown("### 🗺️ Interactive Risk Map")
+# SIMPLE MAP - Just colored circles, no fancy 3D
+st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
-map_data = filtered.copy()
-map_data['color'] = map_data['avg_risk'].apply(
-    lambda x: [139, 0, 0, 220] if x >= 70    # Dark red - Extreme
-    else [255, 0, 0, 200] if x >= 60         # Red - Very High
-    else [255, 69, 0, 180] if x >= 50        # Orange-Red - High
-    else [255, 140, 0, 160] if x >= 40       # Orange - Elevated
-    else [255, 215, 0, 140]                  # Gold - Moderate
-)
-map_data['radius'] = (map_data['avg_risk'] ** 1.5) * 30
+st.markdown("**Each circle is a high-risk area. Bigger and redder = more dangerous.**")
+
+# Simple scatter plot layer
+map_data = summary.copy()
+
+# Create simple color based on risk
+def get_color(risk):
+    if risk >= 90:
+        return [180, 0, 0, 200]  # Dark red
+    elif risk >= 85:
+        return [255, 0, 0, 180]  # Red
+    else:
+        return [255, 100, 0, 160]  # Orange
+
+map_data['color'] = map_data['risk_score'].apply(get_color)
+map_data['radius'] = map_data['risk_score'] * 600  # Size based on risk
 
 layer = pdk.Layer(
     'ScatterplotLayer',
@@ -85,152 +84,169 @@ layer = pdk.Layer(
     get_color='color',
     get_radius='radius',
     pickable=True,
-    auto_highlight=True
+    auto_highlight=True,
 )
 
 view_state = pdk.ViewState(
-    latitude=34.0,
-    longitude=-117.8,
-    zoom=7.5,
-    pitch=0
+    latitude=33.9,
+    longitude=-117.5,
+    zoom=7,
+    pitch=0,
+    bearing=0
 )
 
 deck = pdk.Deck(
     layers=[layer],
     initial_view_state=view_state,
+    map_style='mapbox://styles/mapbox/light-v10',
     tooltip={
-        "html": "<b>Risk Score:</b> {avg_risk:.1f}/100<br/>"
-                "<b>Risk Level:</b> {risk_category}<br/>"
-                "<b>Historical Events:</b> {fire_count}<br/>"
-                "<b>Fire Intensity:</b> {total_frp:.0f} MW<br/>"
-                "<b>Location:</b> {latitude:.3f}°N, {longitude:.3f}°W",
-        "style": {"backgroundColor": "#1f1f1f", "color": "white", "fontSize": "12px"}
+        "html": "<b style='font-size:16px'>{zone_name}</b><br/>"
+                "<b>Risk:</b> {risk_score}/100<br/>"
+                "<b>Homes:</b> {homes_at_risk:,}<br/>"
+                "<b>County:</b> {area}",
+        "style": {"backgroundColor": "white", "color": "black", "fontSize": "14px", "padding": "10px"}
     }
 )
 
 st.pydeck_chart(deck, use_container_width=True)
 
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("""
-    **Risk Levels:**  
-    🔴 **Extreme (70-100)** - Highest priority for prevention and preparedness  
-    🟠 **High (50-70)** - Significant risk, enhanced monitoring needed  
-    🟡 **Elevated (40-50)** - Moderate risk, standard precautions  
-    """)
+    st.markdown("🔴 **Extreme Risk (90-95)** | 🟠 **Very High Risk (85-90)** | 🟠 **High Risk (80-85)**")
 with col2:
-    st.info("💡 **Tip:** Click and drag to pan, scroll to zoom")
+    st.info("💡 Hover over circles for details")
 
 st.divider()
 
-# High risk zones table
-st.markdown("### 🚨 Extreme Risk Zones (Score ≥ 70)")
+# RISK ZONE CARDS - One card per zone
+st.markdown("### 📍 The 8 Risk Zones")
 
-extreme = zones[zones['avg_risk'] >= 70].sort_values('avg_risk', ascending=False)
+# Show top 3 in detail
+top3 = summary.nlargest(3, 'risk_score')
 
-if len(extreme) > 0:
-    display = extreme[['latitude', 'longitude', 'avg_risk', 'fire_count', 'total_frp']].head(20)
-    display = display.round({'latitude': 3, 'longitude': 3, 'avg_risk': 1, 'total_frp': 0})
-    display.columns = ['Latitude', 'Longitude', 'Risk Score', 'Events', 'Fire Power (MW)']
-    st.dataframe(display, use_container_width=True, hide_index=True)
+for idx, row in top3.iterrows():
+    with st.container():
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            st.markdown(f"### {row['zone_name']}")
+            st.markdown(f"**{row['area']}**")
+            st.caption(row['description'])
+        
+        with col2:
+            # Risk badge
+            if row['risk_score'] >= 90:
+                st.error(f"**{row['risk_score']}/100**")
+                st.caption("EXTREME RISK")
+            elif row['risk_score'] >= 85:
+                st.warning(f"**{row['risk_score']}/100**")
+                st.caption("VERY HIGH RISK")
+            else:
+                st.info(f"**{row['risk_score']}/100**")
+                st.caption("HIGH RISK")
+        
+        with col3:
+            st.metric("Homes at Risk", f"{row['homes_at_risk']:,}")
+        
+        with st.expander("See why this area is high-risk"):
+            st.markdown(f"**Key Risk Factors:** {row['key_factors']}")
+            st.markdown(f"**Recent Major Fires:** {row['recent_fires']}")
     
-    st.caption("""
-    **Known High-Risk Areas:** San Bernardino Mountains, Angeles National Forest, 
-    Malibu/Santa Monica Mountains, San Diego backcountry, Ventura County hills
-    """)
-else:
-    st.success("No extreme risk zones with current filters")
+    st.divider()
+
+# Show remaining zones in a simple table
+st.markdown("### Other High-Risk Zones")
+
+remaining = summary.iloc[3:]
+display = remaining[['zone_name', 'risk_score', 'homes_at_risk', 'area']].copy()
+display.columns = ['Zone', 'Risk Score', 'Homes at Risk', 'County']
+
+st.dataframe(
+    display,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Risk Score": st.column_config.ProgressColumn(
+            "Risk Score",
+            format="%d/100",
+            min_value=0,
+            max_value=100,
+        ),
+    }
+)
 
 st.divider()
 
-# Analytics
+# Simple comparison chart
+st.markdown("### 📊 Risk Levels Compared")
+
+fig = px.bar(
+    summary.sort_values('risk_score', ascending=True),
+    y='zone_name',
+    x='risk_score',
+    orientation='h',
+    color='risk_score',
+    color_continuous_scale='YlOrRd',
+    labels={'zone_name': 'Zone', 'risk_score': 'Risk Score (out of 100)'}
+)
+fig.update_layout(
+    showlegend=False,
+    height=400,
+    xaxis_range=[75, 100]
+)
+st.plotly_chart(fig, use_container_width=True)
+
+st.divider()
+
+# What it means section
+st.markdown("### 🎯 What This Means For You")
+
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 📊 Risk Distribution")
-    risk_dist = zones['risk_category'].value_counts().sort_index()
-    fig = px.bar(
-        x=risk_dist.index,
-        y=risk_dist.values,
-        color=risk_dist.index,
-        color_discrete_map={'Moderate': '#FFD700', 'High': '#FF4500', 'Extreme': '#8B0000'},
-        labels={'x': 'Risk Category', 'y': 'Number of Zones'}
-    )
-    fig.update_layout(showlegend=False, height=350)
-    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("#### If You Live In These Areas:")
+    st.markdown("""
+    1. **Know your zone's risk level** - Check the map above
+    2. **Create defensible space** - Clear brush 100ft from your home
+    3. **Have an evacuation plan** - Know 2 ways out
+    4. **Sign up for alerts** - Get emergency notifications
+    5. **Prepare a go-bag** - Be ready to leave quickly
+    """)
 
 with col2:
-    st.markdown("### 🔥 Risk vs Historical Activity")
-    fig = px.scatter(
-        zones.sample(min(500, len(zones))),
-        x='fire_count',
-        y='avg_risk',
-        size='total_frp',
-        color='avg_risk',
-        color_continuous_scale='YlOrRd',
-        labels={'fire_count': 'Historical Events', 'avg_risk': 'Risk Score'}
-    )
-    fig.update_layout(height=350)
-    st.plotly_chart(fig, use_container_width=True)
-
-# Timeline context
-st.divider()
-st.markdown("### 📅 Major Southern California Fires (Last 10 Years)")
-
-major_fires_text = """
-| Year | Fire Name | Acres Burned | Location |
-|------|-----------|--------------|----------|
-| 2020 | Bobcat Fire | 115,796 | San Gabriel Mountains |
-| 2020 | Apple Fire | 33,424 | Riverside County |
-| 2018 | Woolsey Fire | 96,949 | Malibu/Ventura |
-| 2018 | Holy Fire | 23,136 | Orange/Riverside Counties |
-| 2017 | Thomas Fire | 281,893 | Ventura/Santa Barbara |
-
-**These historical fires inform our risk model, showing patterns that predict future risk.**
-"""
-st.markdown(major_fires_text)
-
-# Methodology
-st.divider()
-with st.expander("📖 **Methodology & Data Sources**"):
+    st.markdown("#### Why These Zones Are High-Risk:")
     st.markdown("""
-    ### Comprehensive Risk Score Calculation
+    - **Santa Ana Winds** - Dry, powerful winds spread fires fast
+    - **Dense Vegetation** - Lots of fuel for fires
+    - **Mountain Terrain** - Fires move uphill quickly
+    - **Many Homes** - Built in fire-prone areas
+    - **History** - These areas have burned before
+    """)
+
+st.divider()
+
+# Simple methodology
+with st.expander("ℹ️ How We Calculated Risk"):
+    st.markdown("""
+    ### Simple Risk Scoring
     
-    Our model combines multiple data sources and risk factors:
+    Each zone's risk score is based on:
     
-    **Historical Fire Data (40%)**
-    - NASA FIRMS satellite detections (2020-2024)
-    - Major fire perimeters and burn scars
-    - Temporal weighting (recent fires = higher weight)
+    - **Past Fires** (30%) - Has it burned before?
+    - **Weather** (25%) - Is it in a Santa Ana wind zone?
+    - **Vegetation** (20%) - How much dry brush and trees?
+    - **Communities** (15%) - How many homes are there?
+    - **Access** (10%) - Can firefighters get there easily?
     
-    **Environmental Factors (35%)**
-    - Santa Ana wind corridors
-    - Drought-stressed vegetation
-    - Dense chaparral zones
-    - Topographic fire spread potential
+    **Data Sources:**
+    - CAL FIRE (California fire history)
+    - County records (home counts)
+    - NOAA (weather patterns)
+    - Local fire departments
     
-    **Human Factors (25%)**
-    - Wildland-Urban Interface (WUI) zones
-    - Population density
-    - Historical ignition sources
-    
-    ### Data Sources
-    - **NASA FIRMS** - Fire Information for Resource Management System (MODIS/VIIRS)
-    - **CAL FIRE** - Historical fire perimeters and statistics
-    - **NOAA** - Weather and climate data
-    - **USGS** - Vegetation and topography
-    
-    ### Validation
-    Risk scores validated against:
-    - Historical fire occurrence patterns
-    - Insurance industry risk assessments
-    - County fire department data
-    
-    ### Limitations
-    - Risk scores are probabilistic, not predictive of specific events
-    - Weather conditions can rapidly change risk levels
-    - Human behavior (ignition sources) adds unpredictability
+    **Important:** Risk scores show probability and impact, but they can't predict 
+    exactly when or where a fire will start. Weather and human actions also matter.
     """)
 
 st.markdown("---")
-st.caption("🔥 Data: NASA FIRMS, CAL FIRE, NOAA | Multi-source validated | Analysis by Luba Hristova")
+st.caption("🔥 Southern California Wildfire Risk Analysis | Data: CAL FIRE, County Records, NOAA | By Luba Hristova")
