@@ -96,22 +96,24 @@ hex_layer = pdk.Layer(
     lower_percentile=0,
 )
 
-# Add zone markers for tooltips that actually work
+# Add zone markers for tooltips - much smaller and subtle
 summary['color'] = summary['risk_score'].apply(
-    lambda x: [200, 0, 0, 255] if x >= 90 else [255, 100, 0, 255] if x >= 85 else [255, 150, 0, 255]
+    lambda x: [200, 0, 0, 180] if x >= 90 else [255, 100, 0, 160] if x >= 85 else [255, 150, 0, 140]
 )
-# Format homes_at_risk as string with commas for display
-summary['homes_display'] = summary['homes_at_risk'].apply(lambda x: f"{int(x):,}")
+
+# Ensure homes_display exists (in case CSV doesn't have it)
+if 'homes_display' not in summary.columns:
+    summary['homes_display'] = summary['homes_at_risk'].apply(lambda x: f"{int(x):,}")
 
 marker_layer = pdk.Layer(
     "ScatterplotLayer",
     data=summary,
     get_position=["longitude", "latitude"],
     get_fill_color="color",
-    get_radius=12000,
+    get_radius=3000,  # Much smaller - just for tooltips
     pickable=True,
     auto_highlight=True,
-    opacity=0.6,
+    opacity=0.3,  # More transparent
 )
 
 view_state = pdk.ViewState(
