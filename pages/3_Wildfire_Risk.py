@@ -63,16 +63,18 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL HEXAGONAL GRID - Like Esri/QGIS
-st.markdown("### 🗺️ Where Are The High-Risk Zones?")
+# PROFESSIONAL FULL-COVERAGE HEXAGONAL GRID
+st.markdown("### 🗺️ Southern California Wildfire Risk Analysis")
 
-st.markdown("**Hexagonal grid analysis showing wildfire risk intensity across Southern California.**")
+st.markdown("**Hexagonal heat map showing wildfire risk across the entire region.**")
 
 # Ensure homes_display exists
 if 'homes_display' not in zones.columns:
-    zones['homes_display'] = zones['homes_at_risk'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "N/A")
+    zones['homes_display'] = zones['homes_at_risk'].apply(
+        lambda x: f"{int(x):,}" if pd.notna(x) and x > 0 else "N/A"
+    )
 
-# Create professional hexagon layer with proper aggregation
+# Create professional hexagon layer covering entire region
 hex_layer = pdk.Layer(
     "HexagonLayer",
     data=zones,
@@ -86,56 +88,32 @@ hex_layer = pdk.Layer(
     get_elevation_weight="risk_score",
     get_color_weight="risk_score",
     color_range=[
-        [255, 255, 204],  # Light yellow - Low
-        [255, 237, 160],  # Yellow
-        [254, 217, 118],  # Yellow-orange
-        [254, 178, 76],   # Orange
-        [253, 141, 60],   # Orange-red
-        [252, 78, 42],    # Red
-        [227, 26, 28],    # Dark red
-        [189, 0, 38],     # Deep red - Extreme
+        [255, 255, 178],  # Very light yellow - Low risk
+        [254, 217, 118],  # Yellow
+        [254, 178, 76],   # Yellow-orange
+        [253, 141, 60],   # Orange
+        [252, 78, 42],    # Orange-red
+        [227, 26, 28],    # Red
+        [189, 0, 38],     # Dark red
+        [128, 0, 38],     # Very dark red - Extreme
     ],
-    radius=7000,
+    radius=6000,  # Larger radius for fuller coverage
     upper_percentile=100,
     lower_percentile=0,
-)
-
-# Add clickable zone markers for detailed info
-if 'homes_display' not in summary.columns:
-    summary['homes_display'] = summary['homes_at_risk'].apply(lambda x: f"{int(x):,}")
-
-# Small markers at zone centers for tooltips
-marker_layer = pdk.Layer(
-    "IconLayer",
-    data=summary,
-    get_position=["longitude", "latitude"],
-    get_icon="marker",
-    get_size=4,
-    size_scale=800,
-    pickable=True,
-    auto_highlight=True,
-    icon_atlas="https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/icon-atlas.png",
-    icon_mapping={
-        "marker": {"x": 0, "y": 0, "width": 128, "height": 128, "mask": True}
-    },
-    get_color=[255, 0, 0, 0],  # Invisible but clickable
 )
 
 view_state = pdk.ViewState(
     latitude=33.9,
     longitude=-117.5,
-    zoom=7.5,
+    zoom=7.3,
     pitch=0,
     bearing=0
 )
 
-# Tooltip for zone details
+# Tooltip shows zone info
 tooltip = {
-    "html": "<div style='background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);'>"
-            "<h4 style='margin: 0 0 8px 0; color: #d32f2f;'>{zone_name}</h4>"
-            "<p style='margin: 4px 0; color: #333;'><strong>Risk Score:</strong> {risk_score}/100</p>"
-            "<p style='margin: 4px 0; color: #333;'><strong>Homes at Risk:</strong> {homes_display}</p>"
-            "<p style='margin: 4px 0; color: #666;'><strong>Location:</strong> {area}</p>"
+    "html": "<div style='background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);'>"
+            "<p style='margin: 0; color: #333; font-size: 13px;'><strong>Risk Score:</strong> {elevationValue:.0f}</p>"
             "</div>",
     "style": {
         "backgroundColor": "transparent",
@@ -144,7 +122,7 @@ tooltip = {
 }
 
 deck = pdk.Deck(
-    layers=[hex_layer, marker_layer],
+    layers=[hex_layer],
     initial_view_state=view_state,
     map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
     tooltip=tooltip
@@ -153,32 +131,31 @@ deck = pdk.Deck(
 try:
     st.pydeck_chart(deck, use_container_width=True)
 except Exception as e:
-    st.warning("Interactive map couldn't load. Showing alternative visualization...")
+    st.warning("Interactive hexagonal map couldn't load. Showing alternative heatmap...")
     
-    # Fallback: Plotly hexbin
+    # Fallback: Plotly density heatmap
     import plotly.express as px
     
     fig = px.density_mapbox(
-        summary,
+        zones.sample(min(5000, len(zones))),  # Sample for performance
         lat="latitude",
         lon="longitude",
         z="risk_score",
-        radius=20,
+        radius=15,
         zoom=7,
         mapbox_style="carto-positron",
         color_continuous_scale="YlOrRd",
-        hover_name="zone_name",
-        hover_data={"risk_score": True, "homes_display": True, "area": True, "latitude": False, "longitude": False},
+        labels={"risk_score": "Risk Score"}
     )
-    fig.update_layout(height=600)
+    fig.update_layout(height=600, coloraxis_colorbar_title="Risk Score")
     st.plotly_chart(fig, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("**Hexbin Analysis Color Scale:** 🟡 Yellow = Lower Risk → 🟠 Orange = High Risk → 🔴 Dark Red = Extreme Risk")
-    st.caption("Professional hexagonal grid showing spatial risk distribution. Click zone centers for detailed information.")
+    st.markdown("**Heat Map Scale:** 🟡 Yellow = Lower Risk → 🟠 Orange = High Risk → 🔴 Dark Red = Extreme Risk")
+    st.caption("Full hexagonal coverage across Southern California. Hover over hexagons to see risk values.")
 with col2:
-    st.info("💡 Click zones for details")
+    st.info("💡 Hover for details")
 
 # Add zone selector below map
 st.markdown("#### 📍 Select a Zone for Details")
