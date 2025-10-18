@@ -63,19 +63,19 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL HEXAGONAL HEATMAP (Robust & Interactive)
+# PROFESSIONAL HEXAGONAL HEATMAP with Working Tooltips
 st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
 st.markdown("**Each hexagon represents a geographic area. Red = highest risk, Orange = high risk, Yellow = elevated risk.**")
 
-# Create hexagon layer with proper settings for visibility
+# Base hexagon layer for coverage
 hex_layer = pdk.Layer(
     "HexagonLayer",
     data=zones,
     get_position=["longitude", "latitude"],
     auto_highlight=True,
     elevation_scale=0,
-    pickable=True,
+    pickable=False,
     elevation_range=[0, 0],
     extruded=False,
     coverage=0.95,
@@ -96,6 +96,22 @@ hex_layer = pdk.Layer(
     lower_percentile=0,
 )
 
+# Add zone markers for tooltips that actually work
+summary['color'] = summary['risk_score'].apply(
+    lambda x: [200, 0, 0, 255] if x >= 90 else [255, 100, 0, 255] if x >= 85 else [255, 150, 0, 255]
+)
+
+marker_layer = pdk.Layer(
+    "ScatterplotLayer",
+    data=summary,
+    get_position=["longitude", "latitude"],
+    get_fill_color="color",
+    get_radius=12000,
+    pickable=True,
+    auto_highlight=True,
+    opacity=0.6,
+)
+
 view_state = pdk.ViewState(
     latitude=33.9,
     longitude=-117.5,
@@ -104,23 +120,22 @@ view_state = pdk.ViewState(
     bearing=0
 )
 
-# Proper tooltip that works
+# Working tooltip with actual data
 tooltip = {
-    "html": "<b>{zone_name}</b><br/>"
-            "Risk Score: {risk_score}/100<br/>"
-            "Area: {area}",
+    "html": "<div style='background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);'>"
+            "<h4 style='margin: 0 0 8px 0; color: #d32f2f;'>{zone_name}</h4>"
+            "<p style='margin: 4px 0; color: #333;'><strong>Risk Score:</strong> {risk_score}/100</p>"
+            "<p style='margin: 4px 0; color: #333;'><strong>Homes at Risk:</strong> {homes_at_risk:,}</p>"
+            "<p style='margin: 4px 0; color: #666;'><strong>Location:</strong> {area}</p>"
+            "</div>",
     "style": {
-        "backgroundColor": "white",
-        "color": "black",
-        "fontSize": "14px",
-        "padding": "10px",
-        "borderRadius": "5px"
+        "backgroundColor": "transparent",
+        "color": "black"
     }
 }
 
-# Use a basemap that works in both light and dark mode
 deck = pdk.Deck(
-    layers=[hex_layer],
+    layers=[hex_layer, marker_layer],
     initial_view_state=view_state,
     map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
     tooltip=tooltip
