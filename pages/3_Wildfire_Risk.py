@@ -67,11 +67,14 @@ st.divider()
 st.markdown("### 🗺️ Southern California Wildfire Risk Analysis")
 st.markdown("**Past, Present & Future: 8 Major High-Risk Zones**")
 
+# Ensure required columns exist
+if 'homes_display' not in zones.columns:
+    zones['homes_display'] = zones['homes_at_risk'].apply(lambda x: f"{int(x):,}")
+if 'area' not in zones.columns:
+    zones['area'] = 'Southern California'
+
 # Create large visible zones
 zones['radius'] = zones['risk_score'] * 300  # Larger based on risk
-zones['color_rgb'] = zones['risk_score'].apply(
-    lambda x: f"rgb({int(min(255, x*2.7))}, {int(max(0, 255-x*3))}, 0)"
-)
 
 import plotly.graph_objects as go
 
