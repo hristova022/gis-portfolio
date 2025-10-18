@@ -100,6 +100,8 @@ hex_layer = pdk.Layer(
 summary['color'] = summary['risk_score'].apply(
     lambda x: [200, 0, 0, 255] if x >= 90 else [255, 100, 0, 255] if x >= 85 else [255, 150, 0, 255]
 )
+# Format homes_at_risk as string with commas for display
+summary['homes_display'] = summary['homes_at_risk'].apply(lambda x: f"{int(x):,}")
 
 marker_layer = pdk.Layer(
     "ScatterplotLayer",
@@ -125,7 +127,7 @@ tooltip = {
     "html": "<div style='background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);'>"
             "<h4 style='margin: 0 0 8px 0; color: #d32f2f;'>{zone_name}</h4>"
             "<p style='margin: 4px 0; color: #333;'><strong>Risk Score:</strong> {risk_score}/100</p>"
-            "<p style='margin: 4px 0; color: #333;'><strong>Homes at Risk:</strong> {homes_at_risk:,}</p>"
+            "<p style='margin: 4px 0; color: #333;'><strong>Homes at Risk:</strong> {homes_display}</p>"
             "<p style='margin: 4px 0; color: #666;'><strong>Location:</strong> {area}</p>"
             "</div>",
     "style": {
@@ -168,9 +170,9 @@ except Exception as e:
 col1, col2 = st.columns([3, 1])
 with col1:
     st.markdown("**Color Scale:** 🟡 Light Yellow = Lower Risk → 🟠 Orange = High Risk → 🔴 Dark Red = Extreme Risk")
-    st.caption("Hover over hexagons to see zone details | Geographic grid shows risk across SoCal")
+    st.caption("Hover over the red zone markers to see details | Hexagons show overall risk intensity")
 with col2:
-    st.info("💡 Hover to see details")
+    st.info("💡 Hover red zones")
 
 # Add zone selector below map
 st.markdown("#### 📍 Select a Zone for Details")
