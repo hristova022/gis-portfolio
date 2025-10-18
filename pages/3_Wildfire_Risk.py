@@ -63,57 +63,50 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL HEXAGONAL HEATMAP with Working Tooltips
+# CLEAN ZONE VISUALIZATION - All zones visible and hoverable
 st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
-st.markdown("**Each hexagon represents a geographic area. Red = highest risk, Orange = high risk, Yellow = elevated risk.**")
+st.markdown("**8 colored zones show wildfire risk areas. Hover over any zone to see details.**")
 
-# Base hexagon layer for coverage
-hex_layer = pdk.Layer(
-    "HexagonLayer",
-    data=zones,
-    get_position=["longitude", "latitude"],
-    auto_highlight=True,
-    elevation_scale=0,
-    pickable=False,
-    elevation_range=[0, 0],
-    extruded=False,
-    coverage=0.95,
-    get_elevation_weight="risk_score",
-    get_color_weight="risk_score",
-    color_range=[
-        [255, 255, 204, 220],  # Light yellow
-        [255, 237, 160, 230],  # Yellow
-        [254, 217, 118, 240],  # Yellow-orange
-        [254, 178, 76, 245],   # Orange
-        [253, 141, 60, 250],   # Orange-red
-        [252, 78, 42, 255],    # Red
-        [227, 26, 28, 255],    # Dark red
-        [177, 0, 38, 255],     # Deep red
-    ],
-    radius=8000,
-    upper_percentile=100,
-    lower_percentile=0,
-)
-
-# Add zone markers for tooltips - much smaller and subtle
+# Create one colored circle per zone - clear and simple
 summary['color'] = summary['risk_score'].apply(
-    lambda x: [200, 0, 0, 180] if x >= 90 else [255, 100, 0, 160] if x >= 85 else [255, 150, 0, 140]
+    lambda x: [139, 0, 0, 200] if x >= 90      # Dark red - Extreme
+    else [220, 20, 20, 200] if x >= 85         # Red - Very High  
+    else [255, 100, 0, 190] if x >= 82         # Orange - High
+    else [255, 160, 0, 180]                    # Yellow-orange - Elevated
 )
 
-# Ensure homes_display exists (in case CSV doesn't have it)
+# Ensure homes_display exists
 if 'homes_display' not in summary.columns:
     summary['homes_display'] = summary['homes_at_risk'].apply(lambda x: f"{int(x):,}")
 
-marker_layer = pdk.Layer(
+# Single layer - colored zones with labels
+zone_layer = pdk.Layer(
     "ScatterplotLayer",
     data=summary,
     get_position=["longitude", "latitude"],
     get_fill_color="color",
-    get_radius=3000,  # Much smaller - just for tooltips
+    get_radius=25000,  # Larger to show clear zones
     pickable=True,
     auto_highlight=True,
-    opacity=0.3,  # More transparent
+    opacity=0.7,
+    stroked=True,
+    get_line_color=[255, 255, 255, 100],
+    line_width_min_pixels=2,
+)
+
+# Add text labels on each zone
+text_layer = pdk.Layer(
+    "TextLayer",
+    data=summary,
+    get_position=["longitude", "latitude"],
+    get_text="zone_name",
+    get_size=13,
+    get_color=[255, 255, 255, 255],
+    get_text_anchor='"middle"',
+    get_alignment_baseline='"center"',
+    get_background_color=[0, 0, 0, 120],
+    background_padding=[4, 2, 4, 2],
 )
 
 view_state = pdk.ViewState(
@@ -124,7 +117,7 @@ view_state = pdk.ViewState(
     bearing=0
 )
 
-# Working tooltip with actual data
+# Clear tooltip with all the info
 tooltip = {
     "html": "<div style='background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);'>"
             "<h4 style='margin: 0 0 8px 0; color: #d32f2f;'>{zone_name}</h4>"
@@ -139,7 +132,7 @@ tooltip = {
 }
 
 deck = pdk.Deck(
-    layers=[hex_layer, marker_layer],
+    layers=[zone_layer, text_layer],
     initial_view_state=view_state,
     map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
     tooltip=tooltip
@@ -171,10 +164,10 @@ except Exception as e:
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("**Color Scale:** 🟡 Light Yellow = Lower Risk → 🟠 Orange = High Risk → 🔴 Dark Red = Extreme Risk")
-    st.caption("Hover over the red zone markers to see details | Hexagons show overall risk intensity")
+    st.markdown("**Color Scale:** 🔴 Dark Red = Extreme Risk (90+) | 🔴 Red = Very High (85-90) | 🟠 Orange = High (82-85)")
+    st.caption("Each labeled zone shows a major wildfire risk area. Hover over any zone to see details.")
 with col2:
-    st.info("💡 Hover red zones")
+    st.info("💡 Hover zones for details")
 
 # Add zone selector below map
 st.markdown("#### 📍 Select a Zone for Details")
