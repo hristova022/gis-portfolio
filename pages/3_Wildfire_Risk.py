@@ -63,12 +63,12 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL HEXAGONAL HEATMAP (Like real GIS)
+# PROFESSIONAL HEXAGONAL HEATMAP (Robust & Interactive)
 st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
 st.markdown("**Each hexagon represents a geographic area. Red = highest risk, Orange = high risk, Yellow = elevated risk.**")
 
-# Create hexagon layer for clean, professional look
+# Create hexagon layer with proper settings for visibility
 hex_layer = pdk.Layer(
     "HexagonLayer",
     data=zones,
@@ -82,14 +82,14 @@ hex_layer = pdk.Layer(
     get_elevation_weight="risk_score",
     get_color_weight="risk_score",
     color_range=[
-        [255, 255, 204],  # Light yellow
-        [255, 237, 160],  # Yellow
-        [254, 217, 118],  # Yellow-orange
-        [254, 178, 76],   # Orange
-        [253, 141, 60],   # Orange-red
-        [252, 78, 42],    # Red
-        [227, 26, 28],    # Dark red
-        [177, 0, 38],     # Deep red
+        [255, 255, 204, 220],  # Light yellow
+        [255, 237, 160, 230],  # Yellow
+        [254, 217, 118, 240],  # Yellow-orange
+        [254, 178, 76, 245],   # Orange
+        [253, 141, 60, 250],   # Orange-red
+        [252, 78, 42, 255],    # Red
+        [227, 26, 28, 255],    # Dark red
+        [177, 0, 38, 255],     # Deep red
     ],
     radius=8000,
     upper_percentile=100,
@@ -104,27 +104,58 @@ view_state = pdk.ViewState(
     bearing=0
 )
 
+# Proper tooltip that works
 tooltip = {
-    "html": "<b>Risk Zone Information</b><br/>"
-            "Click on hexagons to explore zones",
-    "style": {"backgroundColor": "steelblue", "color": "white"}
+    "html": "<b>{zone_name}</b><br/>"
+            "Risk Score: {risk_score}/100<br/>"
+            "Area: {area}",
+    "style": {
+        "backgroundColor": "white",
+        "color": "black",
+        "fontSize": "14px",
+        "padding": "10px",
+        "borderRadius": "5px"
+    }
 }
 
+# Use a basemap that works in both light and dark mode
 deck = pdk.Deck(
     layers=[hex_layer],
     initial_view_state=view_state,
-    map_style='mapbox://styles/mapbox/light-v11',
+    map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
     tooltip=tooltip
 )
 
-st.pydeck_chart(deck, use_container_width=True)
+try:
+    st.pydeck_chart(deck, use_container_width=True)
+except Exception as e:
+    st.warning("Interactive map couldn't load. Showing alternative visualization...")
+    
+    # Fallback: Simple plotly map
+    import plotly.express as px
+    
+    fig = px.scatter_mapbox(
+        summary,
+        lat="latitude",
+        lon="longitude",
+        color="risk_score",
+        size="homes_at_risk",
+        color_continuous_scale="YlOrRd",
+        size_max=30,
+        zoom=7,
+        hover_name="zone_name",
+        hover_data={"risk_score": True, "homes_at_risk": True, "area": True, "latitude": False, "longitude": False},
+        labels={"risk_score": "Risk Score", "homes_at_risk": "Homes at Risk"}
+    )
+    fig.update_layout(mapbox_style="carto-positron", height=600)
+    st.plotly_chart(fig, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
     st.markdown("**Color Scale:** 🟡 Light Yellow = Lower Risk → 🟠 Orange = High Risk → 🔴 Dark Red = Extreme Risk")
-    st.caption("Geographic grid shows fire risk across Southern California counties")
+    st.caption("Hover over hexagons to see zone details | Geographic grid shows risk across SoCal")
 with col2:
-    st.info("💡 Zoom and pan to explore")
+    st.info("💡 Hover to see details")
 
 # Add zone selector below map
 st.markdown("#### 📍 Select a Zone for Details")
