@@ -63,52 +63,68 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL HEATMAP - Esri style
+# PROFESSIONAL HEXAGONAL HEATMAP (Like real GIS)
 st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
-st.markdown("**Red/orange areas show where wildfire risk is highest. Darker colors = more dangerous.**")
+st.markdown("**Each hexagon represents a geographic area. Red = highest risk, Orange = high risk, Yellow = elevated risk.**")
 
-# Create heatmap with better colors (Esri-style)
-heatmap_layer = pdk.Layer(
-    "HeatmapLayer",
+# Create hexagon layer for clean, professional look
+hex_layer = pdk.Layer(
+    "HexagonLayer",
     data=zones,
-    opacity=0.9,
     get_position=["longitude", "latitude"],
-    aggregation='"MEAN"',
-    threshold=0.05,
-    get_weight="risk_score",
-    radiusPixels=50,
-    colorRange=[
-        [255, 255, 178, 0],      # Light yellow - transparent
-        [254, 204, 92, 100],     # Yellow
-        [253, 141, 60, 150],     # Orange  
-        [240, 59, 32, 200],      # Red-orange
-        [189, 0, 38, 255],       # Dark red
+    auto_highlight=True,
+    elevation_scale=0,
+    pickable=True,
+    elevation_range=[0, 0],
+    extruded=False,
+    coverage=0.95,
+    get_elevation_weight="risk_score",
+    get_color_weight="risk_score",
+    color_range=[
+        [255, 255, 204],  # Light yellow
+        [255, 237, 160],  # Yellow
+        [254, 217, 118],  # Yellow-orange
+        [254, 178, 76],   # Orange
+        [253, 141, 60],   # Orange-red
+        [252, 78, 42],    # Red
+        [227, 26, 28],    # Dark red
+        [177, 0, 38],     # Deep red
     ],
+    radius=8000,
+    upper_percentile=100,
+    lower_percentile=0,
 )
 
 view_state = pdk.ViewState(
     latitude=33.9,
     longitude=-117.5,
-    zoom=7.2,
+    zoom=7.5,
     pitch=0,
     bearing=0
 )
 
+tooltip = {
+    "html": "<b>Risk Zone Information</b><br/>"
+            "Click on hexagons to explore zones",
+    "style": {"backgroundColor": "steelblue", "color": "white"}
+}
+
 deck = pdk.Deck(
-    layers=[heatmap_layer],
+    layers=[hex_layer],
     initial_view_state=view_state,
     map_style='mapbox://styles/mapbox/light-v11',
+    tooltip=tooltip
 )
 
 st.pydeck_chart(deck, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("**Color Scale:** 🟡 Yellow = Elevated Risk | 🟠 Orange = High Risk | 🔴 Red = Extreme Risk | 🔴 Dark Red = Critical")
-    st.caption("Heatmap shows fire risk intensity across Southern California")
+    st.markdown("**Color Scale:** 🟡 Light Yellow = Lower Risk → 🟠 Orange = High Risk → 🔴 Dark Red = Extreme Risk")
+    st.caption("Geographic grid shows fire risk across Southern California counties")
 with col2:
-    st.info("💡 Zoom in to see details")
+    st.info("💡 Zoom and pan to explore")
 
 # Add zone selector below map
 st.markdown("#### 📍 Select a Zone for Details")
