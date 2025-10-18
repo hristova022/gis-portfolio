@@ -63,10 +63,10 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL FULL-COVERAGE HEXAGONAL GRID
+# COMPLETE HEXAGONAL COVERAGE - Like Starbucks density map
 st.markdown("### 🗺️ Southern California Wildfire Risk Analysis")
 
-st.markdown("**Hexagonal heat map showing wildfire risk across the entire region.**")
+st.markdown("**Complete hexagonal heat map showing wildfire risk intensity across the region.**")
 
 # Ensure homes_display exists
 if 'homes_display' not in zones.columns:
@@ -74,7 +74,7 @@ if 'homes_display' not in zones.columns:
         lambda x: f"{int(x):,}" if pd.notna(x) and x > 0 else "N/A"
     )
 
-# Create professional hexagon layer covering entire region
+# Create tight hexagon layer for complete coverage (no gaps)
 hex_layer = pdk.Layer(
     "HexagonLayer",
     data=zones,
@@ -88,16 +88,17 @@ hex_layer = pdk.Layer(
     get_elevation_weight="risk_score",
     get_color_weight="risk_score",
     color_range=[
-        [255, 255, 178],  # Very light yellow - Low risk
-        [254, 217, 118],  # Yellow
-        [254, 178, 76],   # Yellow-orange
-        [253, 141, 60],   # Orange
-        [252, 78, 42],    # Orange-red
-        [227, 26, 28],    # Red
-        [189, 0, 38],     # Dark red
-        [128, 0, 38],     # Very dark red - Extreme
+        [255, 255, 229],  # Very light yellow
+        [255, 247, 188],  # Light yellow
+        [254, 227, 145],  # Yellow
+        [254, 196, 79],   # Yellow-orange
+        [254, 153, 41],   # Orange
+        [236, 112, 20],   # Dark orange
+        [204, 76, 2],     # Red-orange
+        [153, 52, 4],     # Dark red
+        [102, 37, 6],     # Deep red
     ],
-    radius=6000,  # Larger radius for fuller coverage
+    radius=3500,  # Smaller for tighter packing
     upper_percentile=100,
     lower_percentile=0,
 )
@@ -105,19 +106,18 @@ hex_layer = pdk.Layer(
 view_state = pdk.ViewState(
     latitude=33.9,
     longitude=-117.5,
-    zoom=7.3,
+    zoom=7.5,
     pitch=0,
     bearing=0
 )
 
-# Tooltip shows zone info
+# Simple tooltip
 tooltip = {
-    "html": "<div style='background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);'>"
-            "<p style='margin: 0; color: #333; font-size: 13px;'><strong>Risk Score:</strong> {elevationValue:.0f}</p>"
+    "html": "<div style='background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px;'>"
+            "<p style='margin: 0; color: white; font-size: 12px;'>Risk: {elevationValue:.0f}/100</p>"
             "</div>",
     "style": {
         "backgroundColor": "transparent",
-        "color": "black"
     }
 }
 
@@ -137,11 +137,11 @@ except Exception as e:
     import plotly.express as px
     
     fig = px.density_mapbox(
-        zones.sample(min(5000, len(zones))),  # Sample for performance
+        zones.sample(min(8000, len(zones))),
         lat="latitude",
         lon="longitude",
         z="risk_score",
-        radius=15,
+        radius=12,
         zoom=7,
         mapbox_style="carto-positron",
         color_continuous_scale="YlOrRd",
