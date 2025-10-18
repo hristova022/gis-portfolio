@@ -63,80 +63,70 @@ with col3:
 
 st.divider()
 
-# SIMPLE BUT CLEAR - Named Risk Zones with Full Coverage
-st.markdown("### 🗺️ Southern California Wildfire Risk Analysis")
-st.markdown("**Past, Present & Future: 8 Major High-Risk Zones**")
+# PROFESSIONAL HEXAGONAL HEAT MAP - Full SoCal Coverage
+st.markdown("### 🗺️ Southern California Wildfire Risk Heat Map")
+st.markdown("**Hexagonal analysis covering the entire region. Darker colors = higher risk.**")
 
-# Ensure required columns exist
-if 'homes_display' not in zones.columns:
-    zones['homes_display'] = zones['homes_at_risk'].apply(lambda x: f"{int(x):,}")
-if 'area' not in zones.columns:
-    zones['area'] = 'Southern California'
+import pydeck as pdk
 
-# Create large visible zones
-zones['radius'] = zones['risk_score'] * 300  # Larger based on risk
-
-import plotly.graph_objects as go
-
-# Create map with large colored circles for each zone
-fig = go.Figure()
-
-# Add risk zones as large circles
-fig.add_trace(go.Scattermapbox(
-    lat=zones['latitude'],
-    lon=zones['longitude'],
-    mode='markers+text',
-    marker=dict(
-        size=zones['risk_score'] / 2.5,  # Size based on risk
-        color=zones['risk_score'],
-        colorscale=[
-            [0, '#ffffe0'],      # Very light yellow
-            [0.3, '#ffd700'],    # Gold
-            [0.5, '#ffa500'],    # Orange
-            [0.7, '#ff6347'],    # Tomato
-            [0.85, '#ff0000'],   # Red
-            [1, '#8b0000'],      # Dark red
-        ],
-        opacity=0.7,
-        showscale=True,
-        colorbar=dict(
-            title="Risk<br>Score",
-            x=1.02,
-            tickvals=[20, 40, 60, 80, 95],
-        ),
-        sizemode='diameter'
-    ),
-    text=zones['zone_name'],
-    textposition='top center',
-    textfont=dict(size=10, color='black', family='Arial Black'),
-    hovertemplate='<b>%{text}</b><br>' +
-                  'Risk Score: %{marker.color:.0f}/100<br>' +
-                  'Homes at Risk: %{customdata[0]}<br>' +
-                  'Location: %{customdata[1]}<br>' +
-                  '<extra></extra>',
-    customdata=zones[['homes_display', 'area']].values,
-    name='Risk Zones'
-))
-
-fig.update_layout(
-    mapbox=dict(
-        style='carto-positron',
-        center=dict(lat=33.9, lon=-117.5),
-        zoom=7.2
-    ),
-    height=650,
-    margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    showlegend=False
+# Create hexagon layer with proper coverage
+hex_layer = pdk.Layer(
+    "HexagonLayer",
+    data=zones,
+    get_position=["longitude", "latitude"],
+    auto_highlight=True,
+    elevation_scale=0,
+    pickable=True,
+    elevation_range=[0, 0],
+    extruded=False,
+    coverage=1,
+    get_elevation_weight="risk_score",
+    get_color_weight="risk_score",
+    color_range=[
+        [255, 255, 204],  # Very light yellow - 20-30
+        [255, 237, 160],  # Light yellow - 30-40
+        [254, 217, 118],  # Yellow - 40-50
+        [254, 178, 76],   # Yellow-orange - 50-60
+        [253, 141, 60],   # Orange - 60-70
+        [252, 78, 42],    # Orange-red - 70-80
+        [227, 26, 28],    # Red - 80-90
+        [189, 0, 38],     # Dark red - 90+
+    ],
+    radius=4000,
+    upper_percentile=100,
+    lower_percentile=0,
 )
 
-st.plotly_chart(fig, use_container_width=True)
+view_state = pdk.ViewState(
+    latitude=33.9,
+    longitude=-117.5,
+    zoom=7.5,
+    pitch=0,
+    bearing=0
+)
+
+tooltip = {
+    "html": "<div style='background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px;'>"
+            "<p style='margin: 0; color: white; font-size: 12px;'>Risk Score: {elevationValue:.0f}/100</p>"
+            "</div>",
+    "style": {"backgroundColor": "transparent"}
+}
+
+deck = pdk.Deck(
+    layers=[hex_layer],
+    initial_view_state=view_state,
+    map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    tooltip=tooltip
+)
+
+st.pydeck_chart(deck, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("**8 Named Risk Zones** - Each circle represents a major wildfire risk area. Size and color = risk level.")
-    st.caption("Hover over zones to see: Risk score, homes at risk, and recent fire history")
+    st.markdown("**Professional GIS hexagonal analysis** - Complete coverage across Southern California")
+    st.caption("Hover over hexagons to see risk scores. Yellow = lower risk → Orange = high risk → Red = extreme risk")
 with col2:
-    st.info("💡 Hover for details")
+    st.info("💡 Hover for risk values")
 
 # Add context about past/present/future
 st.markdown("---")
