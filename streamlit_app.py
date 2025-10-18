@@ -6,8 +6,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🗺️ GIS & AI Solutions Portfolio")
-st.subheader("Luba Hristova | GIS Analyst | Spatial Data Science & AI")
+st.title("🗺️ GIS & Climate Solutions Portfolio")
+st.subheader("Luba Hristova | GIS Analyst | Spatial Data Science")
 
 st.markdown("""
 **Long Beach, CA** | [LinkedIn](https://linkedin.com/in/luba-hristova) | [GitHub](https://github.com/hristova022)
@@ -22,8 +22,8 @@ with col1:
     ## About This Portfolio
     
     Interactive case studies demonstrating expertise in **GIS analysis**, **spatial data science**, 
-    and **artificial intelligence**, combining geospatial techniques with advanced analytics 
-    to solve complex spatial problems.
+    and **climate risk assessment**, combining geospatial techniques with data analytics 
+    to solve real-world problems.
     
     Each project showcases the ability to work with spatial data, build analytical models, 
     and create interactive visualizations using industry-standard tools and techniques.
@@ -31,7 +31,7 @@ with col1:
     ### Technical Expertise
     - **GIS & Spatial Analysis:** 6+ years working with ArcGIS, QGIS, and Python geospatial libraries
     - **Spatial Data Science:** Statistical modeling, spatial statistics, predictive analytics
-    - **AI & Machine Learning:** Computer vision, predictive modeling, data-driven insights
+    - **Climate & Risk Analysis:** Wildfire, flooding, and disaster risk assessment
     - **Full-Stack Development:** From data collection to interactive web applications
     """)
 
@@ -39,19 +39,9 @@ with col2:
     st.markdown("""
     ### 🛠️ Tech Stack
     - **GIS:** GeoPandas, Pydeck, QGIS
-    - **ML/AI:** TensorFlow, scikit-learn
     - **Data:** Pandas, NumPy
     - **Viz:** Streamlit, Plotly
     - **Cloud:** Colab, GitHub
-    - **AI Tools:** Claude AI, ChatGPT
-    
-    ### 🤖 Development Process
-    Built with assistance from:
-    - **Claude AI (Anthropic)** - Code development, data analysis
-    - **ChatGPT (OpenAI)** - Problem solving, ideation
-    
-    *This portfolio showcases technical skills in GIS and data science, 
-    with AI tools accelerating development and problem-solving.*
     
     ### 📊 Data Sources
     - OpenStreetMap
@@ -80,9 +70,9 @@ with col1:
         - 75.8% increase in homeless population
         - Only 67.8% increase in shelter capacity
         - 9 food banks, 6 shelters, 5 support centers mapped
-        - ML-powered predictive analysis of high-need areas
+        - Predictive analysis of high-need areas
         
-        **Skills Demonstrated:** GIS analysis, temporal trends, Random Forest ML modeling,
+        **Skills Demonstrated:** GIS analysis, temporal trends, predictive modeling,
         interactive decision support, data visualization
         """)
         if st.button("View Full Analysis →", key="homeless", use_container_width=True):
@@ -91,7 +81,7 @@ with col1:
     with st.container(border=True):
         st.markdown("### 🅿️ Long Beach Parking Crisis Analysis")
         st.markdown("""
-        **AI-powered analysis of parking scarcity in Long Beach**
+        **Data-driven analysis of parking scarcity in Long Beach**
         
         Using satellite imagery and computer vision to analyze parking availability,
         combined with street sweeping schedules and infrastructure mapping.
@@ -100,7 +90,7 @@ with col1:
         - 800+ spaces lost on street sweeping days
         - 89% average structure occupancy at peak times
         - Belmont Shore worst area (98% occupancy weekends)
-        - AI detection model processing aerial imagery
+        - Computer vision processing of aerial imagery
         
         **Skills Demonstrated:** Computer vision, satellite imagery analysis, 
         spatial statistics, municipal data analysis, interactive visualization
@@ -120,22 +110,33 @@ with col1:
 
 with col2:
     with st.container(border=True):
-        st.markdown("### 🔥 Wildfire Risk Dashboard")
+        st.markdown("### 🔥 Southern California Wildfire Risk")
         st.markdown("""
-        Predictive risk modeling for Southern California wildfires with 
-        real-time weather and vegetation data.
+        **8 major high-risk zones mapped and analyzed**
         
-        **Skills:** ML modeling, disaster response, spatial analysis, predictive analytics
+        Clear, story-driven wildfire risk assessment showing WHERE fires are most 
+        likely and WHY each area is dangerous. Covers 96,000+ homes at risk across 
+        LA, Orange, Riverside, San Bernardino, Ventura, and San Diego counties.
+        
+        **Key Findings:**
+        - Malibu/Santa Monica Mountains: Highest risk (95/100)
+        - Angeles National Forest: 15,000 homes at risk
+        - Orange County Foothills: 22,000 homes at risk
+        - Focus on Wildland-Urban Interface dangers
+        
+        **Skills Demonstrated:** Risk modeling, spatial analysis, data synthesis 
+        from multiple sources (CAL FIRE, NASA FIRMS, county records), clear data storytelling
         """)
-        st.markdown("*Coming Soon*")
+        if st.button("View Risk Analysis →", key="wildfire", use_container_width=True):
+            st.switch_page("pages/3_Wildfire_Risk.py")
     
     with st.container(border=True):
-        st.markdown("### 🏗️ AI Damage Assessment")
+        st.markdown("### 🏗️ Building Damage Assessment")
         st.markdown("""
-        Machine learning model for automated building damage detection 
-        from satellite and aerial imagery.
+        Automated building damage detection from satellite and aerial imagery 
+        using computer vision techniques.
         
-        **Skills:** Computer vision, AI/ML, disaster response, image classification
+        **Skills:** Computer vision, disaster response, image classification
         """)
         st.markdown("*Coming Soon*")
 
@@ -144,8 +145,8 @@ st.divider()
 st.markdown("""
 ### 💡 About Me
 
-I'm a GIS professional specializing in spatial data science and artificial intelligence. 
-My work combines geospatial analysis with machine learning to create data-driven solutions 
+I'm a GIS professional specializing in spatial data science and climate risk analysis. 
+My work combines geospatial analysis with data science to create data-driven solutions 
 for complex real-world problems, from disaster response to community planning.
 
 **Want to connect?** Reach out on [LinkedIn](https://linkedin.com/in/luba-hristova) or 
