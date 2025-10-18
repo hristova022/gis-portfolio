@@ -63,65 +63,80 @@ with col3:
 
 st.divider()
 
-# HEATMAP - Shows intensity of risk across areas
+# PROFESSIONAL HEATMAP - Esri style
 st.markdown("### 🗺️ Where Are The High-Risk Zones?")
 
-st.markdown("**Red areas show where wildfire risk is highest. The deeper the red, the more dangerous.**")
+st.markdown("**Red/orange areas show where wildfire risk is highest. Darker colors = more dangerous.**")
 
-# Create heatmap layer using the zone boundary points
+# Create heatmap with better colors (Esri-style)
 heatmap_layer = pdk.Layer(
     "HeatmapLayer",
     data=zones,
-    opacity=0.8,
+    opacity=0.9,
     get_position=["longitude", "latitude"],
-    threshold=0.3,
-    get_weight="risk_score / 10",
-    radiusPixels=60,
-)
-
-# Also add labels for zone centers
-label_data = summary.copy()
-
-text_layer = pdk.Layer(
-    "TextLayer",
-    data=label_data,
-    get_position=["longitude", "latitude"],
-    get_text="zone_name",
-    get_size=14,
-    get_color=[255, 255, 255, 255],
-    get_text_anchor='"middle"',
-    get_alignment_baseline='"center"',
+    aggregation='"MEAN"',
+    threshold=0.05,
+    get_weight="risk_score",
+    radiusPixels=50,
+    colorRange=[
+        [255, 255, 178, 0],      # Light yellow - transparent
+        [254, 204, 92, 100],     # Yellow
+        [253, 141, 60, 150],     # Orange  
+        [240, 59, 32, 200],      # Red-orange
+        [189, 0, 38, 255],       # Dark red
+    ],
 )
 
 view_state = pdk.ViewState(
     latitude=33.9,
     longitude=-117.5,
-    zoom=7,
+    zoom=7.2,
     pitch=0,
     bearing=0
 )
 
 deck = pdk.Deck(
-    layers=[heatmap_layer, text_layer],
+    layers=[heatmap_layer],
     initial_view_state=view_state,
-    map_style='road',
-    tooltip={
-        "html": "<b style='font-size:16px'>{zone_name}</b><br/>"
-                "<b>Risk:</b> {risk_score}/100<br/>"
-                "<b>Homes:</b> {homes_at_risk:,}<br/>"
-                "<b>County:</b> {area}",
-        "style": {"backgroundColor": "white", "color": "black", "fontSize": "14px", "padding": "10px"}
-    }
+    map_style='mapbox://styles/mapbox/light-v11',
 )
 
 st.pydeck_chart(deck, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("🟥 **Dark Red = Extreme Risk** | 🟧 **Orange = High Risk** | 🟨 **Yellow = Moderate Risk**")
-    st.caption("Heatmap intensity shows fire risk concentration")
+    st.markdown("**Color Scale:** 🟡 Yellow = Elevated Risk | 🟠 Orange = High Risk | 🔴 Red = Extreme Risk | 🔴 Dark Red = Critical")
+    st.caption("Heatmap shows fire risk intensity across Southern California")
 with col2:
-    st.info("💡 Hover over zones for details")
+    st.info("💡 Zoom in to see details")
+
+# Add zone selector below map
+st.markdown("#### 📍 Select a Zone for Details")
+
+zone_names = summary['zone_name'].tolist()
+selected_zone = st.selectbox(
+    "Choose a high-risk zone:",
+    zone_names,
+    index=0,
+    label_visibility="collapsed"
+)
+
+# Show details for selected zone
+zone_info = summary[summary['zone_name'] == selected_zone].iloc[0]
+detail_info = [d for d in details if d['name'] == selected_zone][0]
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Risk Score", f"{zone_info['risk_score']}/100")
+with col2:
+    st.metric("Homes at Risk", f"{zone_info['homes_at_risk']:,}")
+with col3:
+    st.metric("Location", zone_info['area'])
+
+with st.expander("📋 Zone Details", expanded=True):
+    st.markdown(f"**{detail_info['description']}**")
+    st.markdown(f"**Key Risk Factors:** {zone_info['key_factors']}")
+    st.markdown(f"**Recent Major Fires:** {zone_info['recent_fires']}")
 
 st.divider()
 
