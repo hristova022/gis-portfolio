@@ -1,370 +1,112 @@
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
+from pydeck.types import String as PDKString
 import plotly.express as px
-import json
+import requests, json
 
 st.set_page_config(page_title="SoCal Wildfire Risk", page_icon="🔥", layout="wide")
-
-st.title("🔥 Southern California Wildfire Risk Zones")
-st.subheader("8 High-Risk Areas: A Clear, Simple View")
+st.title("🔥 Southern California Wildfire Heat Map (Esri-style)")
+st.caption("Point-based heat map with zoom/extent-relative smoothing and weight-by-field, matching ArcGIS Insights.")
 
 @st.cache_data
 def load_data():
-    zones_url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_zones.csv"
+    points_url  = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_points.csv"
     summary_url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_summary.csv"
-    detail_url = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_zones_detailed.json"
-    
-    zones = pd.read_csv(zones_url)
-    summary = pd.read_csv(summary_url)
-    
-    import requests
+    detail_url  = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/wildfire_zones_detailed.json"
+    pts = pd.read_csv(points_url)
+    sm  = pd.read_csv(summary_url)
     details = requests.get(detail_url).json()
-    
-    return zones, summary, details
+    return pts, sm, details
 
-zones, summary, details = load_data()
+points, summary, details = load_data()
 
-# Simple introduction
-with st.container():
-    st.markdown("""
-    ### Why This Analysis Matters
-    
-    Southern California has **8 major wildfire risk zones** - areas where fires happen repeatedly. 
-    
-    This map shows **WHERE** the risk is highest and **WHY** each area is dangerous.
-    
-    **Three main factors create extreme fire risk:**
-    1. **Geography** - Mountains and canyons that channel winds and make fires spread uphill rapidly
-    2. **Weather** - Hot, dry Santa Ana winds that can push fires at speeds up to 100 mph
-    3. **Where homes are built** - Communities built directly in fire-prone wildlands with only one or two roads out
-    
-    When homes are built in canyons, on hillsides, or surrounded by brush and forests, they become part of the 
-    fuel that fires burn. This is called the "Wildland-Urban Interface" - the dangerous zone where neighborhoods 
-    meet wildland. **These areas have the highest property loss when fires occur.**
-    """)
+# ---- Controls (Esri Insights lets you change radius and choose a field) ----
+st.sidebar.header("Heat map controls")
+weight_field = st.sidebar.selectbox(
+    "Weight by field (numeric)", 
+    ["risk_score", "homes_at_risk"],
+    help="Esri heat maps use counts or a numeric field for weight."
+)
+radius_px = st.sidebar.slider("Radius (pixels)", 10, 80, 40, help="Similar to Insights' radius in the Appearance tab.")
+intensity = st.sidebar.slider("Intensity (multiplier)", 1.0, 8.0, 3.0, 0.1)
+threshold = st.sidebar.slider("Threshold (0–1)", 0.0, 1.0, 0.05, 0.01)
 
-st.divider()
+# Normalize optional large-magnitude fields (so homes_at_risk doesn't dominate)
+pts = points.copy()
+if weight_field == "homes_at_risk":
+    # scale to ~0–100 to be in the same ballpark as risk_score
+    s = pts[weight_field].astype(float)
+    pts["weight"] = 100.0 * (s - s.min()) / (s.max() - s.min())
+else:
+    pts["weight"] = pts["risk_score"].astype(float)
 
-# Simple stats
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    total_homes = summary['homes_at_risk'].sum()
-    st.metric("🏠 Homes at Risk", f"{total_homes:,}")
-
-with col2:
-    extreme_zones = len(summary[summary['risk_score'] >= 90])
-    st.metric("🚨 Extreme Risk Zones", f"{extreme_zones} out of 8")
-
-with col3:
-    avg_risk = summary['risk_score'].mean()
-    st.metric("📊 Average Risk Level", f"{avg_risk:.0f}/100")
-
-st.divider()
-
-# PROPER HEXAGONAL HEAT MAP - AGGREGATED
-st.markdown("### 🗺️ Southern California Wildfire Risk Heat Map")
-st.markdown("**Hexagonal aggregation showing risk patterns across the region.**")
-
-import pydeck as pdk
-
-# BIGGER hexagons that aggregate properly - not tiny dots
-hex_layer = pdk.Layer(
-    "HexagonLayer",
-    data=zones,
+# ---- HeatmapLayer (deck.gl) ----
+# Matches Esri "Heat map": relative densities by zoom/extent, with user radius control.
+heat_layer = pdk.Layer(
+    "HeatmapLayer",
+    data=pts,
     get_position=["longitude", "latitude"],
-    auto_highlight=True,
-    elevation_scale=0,
-    pickable=True,
-    elevation_range=[0, 0],
-    extruded=False,
-    coverage=1,
-    get_elevation_weight="risk_score",
-    get_color_weight="risk_score",
+    get_weight="weight",
+    aggregation=PDKString("SUM"),
+    radius_pixels=radius_px,
+    intensity=intensity,
+    threshold=threshold,
     color_range=[
-        [255, 255, 204],  # Light yellow
-        [254, 217, 118],  # Yellow
-        [254, 178, 76],   # Yellow-orange
-        [253, 141, 60],   # Orange
-        [252, 78, 42],    # Orange-red
-        [227, 26, 28],    # Red
-        [189, 0, 38],     # Dark red
+        [255,255,204], [254,217,118], [254,178,76],
+        [253,141,60], [252,78,42], [227,26,28], [189,0,38]
     ],
-    radius=10000,  # 10km hexagons - aggregates properly
-    upper_percentile=100,
-    lower_percentile=0,
+    pickable=False,
 )
 
-view_state = pdk.ViewState(
-    latitude=34.0,
-    longitude=-118.0,
-    zoom=7,
-    pitch=0,
-    bearing=0
-)
-
-tooltip = {
-    "html": "<b>Risk: {elevationValue:.0f}/100</b>",
-    "style": {"backgroundColor": "black", "color": "white", "padding": "8px"}
-}
+view_state = pdk.ViewState(latitude=34.0, longitude=-118.2, zoom=7, pitch=0, bearing=0)
 
 deck = pdk.Deck(
-    layers=[hex_layer],
+    layers=[heat_layer],
     initial_view_state=view_state,
-    map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-    tooltip=tooltip
+    map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
 )
 
 st.pydeck_chart(deck, use_container_width=True)
 
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown("**Proper hexagonal aggregation** - Hexagons aggregate nearby data points to show patterns")
-    st.caption("Yellow = lower risk areas → Orange = elevated risk → Red = high risk zones")
-with col2:
-    st.info("💡 Hover hexagons")
-
-# Add context about past/present/future
-st.markdown("---")
-st.markdown("### 📊 Understanding the Risk Analysis")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("#### 📅 PAST (Historical)")
-    st.markdown("""
-    **Major fires that shaped these zones:**
-    - Thomas Fire (2017) - 281,893 acres
-    - Woolsey Fire (2018) - 96,949 acres  
-    - Bobcat Fire (2020) - 115,796 acres
-    - Apple Fire (2020) - 33,424 acres
-    
-    These historical fires define where risk is highest.
-    """)
-
-with col2:
-    st.markdown("#### 🔴 PRESENT (Current Factors)")
-    st.markdown("""
-    **What makes these zones dangerous today:**
-    - Santa Ana wind corridors
-    - Dense chaparral vegetation
-    - Drought-stressed forests
-    - Homes built in wildlands
-    - Limited evacuation routes
-    
-    Current conditions amplify fire risk.
-    """)
-
-with col3:
-    st.markdown("#### 🔮 FUTURE (Predictive)")
-    st.markdown("""
-    **Why these areas will remain high-risk:**
-    - Climate change = hotter, drier
-    - More homes being built in WUI
-    - Aging infrastructure
-    - Vegetation regrowth cycles
-    - Wind pattern consistency
-    
-    Risk will likely increase over time.
-    """)
-
-# Add zone selector below map
-st.markdown("#### 📍 Select a Zone for Details")
-
-zone_names = summary['zone_name'].tolist()
-selected_zone = st.selectbox(
-    "Choose a high-risk zone:",
-    zone_names,
-    index=0,
-    label_visibility="collapsed"
-)
-
-# Show details for selected zone
-zone_info = summary[summary['zone_name'] == selected_zone].iloc[0]
-detail_info = [d for d in details if d['name'] == selected_zone][0]
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Risk Score", f"{zone_info['risk_score']}/100")
-with col2:
-    st.metric("Homes at Risk", f"{zone_info['homes_at_risk']:,}")
-with col3:
-    st.metric("Location", zone_info['area'])
-
-with st.expander("📋 Zone Details", expanded=True):
-    st.markdown(f"**{detail_info['description']}**")
-    st.markdown(f"**Key Risk Factors:** {zone_info['key_factors']}")
-    st.markdown(f"**Recent Major Fires:** {zone_info['recent_fires']}")
+st.markdown("**Tip:** As in ArcGIS Insights, this heat map shows *relative* density based on the current zoom and extent. Adjust the radius on the left.")
 
 st.divider()
 
-# RISK ZONE CARDS - One card per zone
-st.markdown("### 📍 The 8 Risk Zones")
+# Metrics
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("🏠 Homes at Risk (sum)", f"{int(summary['homes_at_risk'].sum()):,}")
+with col2:
+    st.metric("🚨 Zones ≥90 risk", int((summary['risk_score'] >= 90).sum()))
+with col3:
+    st.metric("📊 Avg Risk", f"{summary['risk_score'].mean():.0f}/100")
 
-# Show top 3 in detail
-top3 = summary.nlargest(3, 'risk_score')
+# Zone selector
+st.subheader("📍 Zone Details")
+selected = st.selectbox("Choose a zone:", summary['zone_name'].tolist(), index=0)
+row = summary[summary['zone_name'] == selected].iloc[0]
+detail = [d for d in details if d['name'] == selected][0]
 
-for idx, row in top3.iterrows():
-    with st.container():
-        col1, col2, col3 = st.columns([3, 1, 1])
-        
-        with col1:
-            st.markdown(f"### {row['zone_name']}")
-            st.markdown(f"**{row['area']}**")
-            st.caption(row['description'])
-        
-        with col2:
-            # Risk badge
-            if row['risk_score'] >= 90:
-                st.error(f"**{row['risk_score']}/100**")
-                st.caption("EXTREME RISK")
-            elif row['risk_score'] >= 85:
-                st.warning(f"**{row['risk_score']}/100**")
-                st.caption("VERY HIGH RISK")
-            else:
-                st.info(f"**{row['risk_score']}/100**")
-                st.caption("HIGH RISK")
-        
-        with col3:
-            st.metric("Homes at Risk", f"{row['homes_at_risk']:,}")
-        
-        with st.expander("See why this area is high-risk"):
-            st.markdown(f"**Key Risk Factors:** {row['key_factors']}")
-            st.markdown(f"**Recent Major Fires:** {row['recent_fires']}")
-    
-    st.divider()
+c1, c2, c3 = st.columns(3)
+c1.metric("Risk Score", f"{int(row['risk_score'])}/100")
+c2.metric("Homes at Risk", f"{int(row['homes_at_risk']):,}")
+c3.metric("Area", row['area'])
 
-# Show remaining zones in a simple table
-st.markdown("### Other High-Risk Zones")
-
-remaining = summary.iloc[3:]
-display = remaining[['zone_name', 'risk_score', 'homes_at_risk', 'area']].copy()
-display.columns = ['Zone', 'Risk Score', 'Homes at Risk', 'County']
-
-st.dataframe(
-    display,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Risk Score": st.column_config.ProgressColumn(
-            "Risk Score",
-            format="%d/100",
-            min_value=0,
-            max_value=100,
-        ),
-    }
-)
+with st.expander("See details", expanded=True):
+    st.markdown(f"**{detail['description']}**")
+    st.markdown(f"**Key Factors:** {row['key_factors']}")
+    st.markdown(f"**Recent Fires:** {row['recent_fires']}")
 
 st.divider()
-
-# Simple comparison chart
-st.markdown("### 📊 Risk Levels Compared")
-
+st.subheader("Risk levels compared")
 fig = px.bar(
     summary.sort_values('risk_score', ascending=True),
-    y='zone_name',
-    x='risk_score',
-    orientation='h',
-    color='risk_score',
-    color_continuous_scale='YlOrRd',
-    labels={'zone_name': 'Zone', 'risk_score': 'Risk Score (out of 100)'}
+    y='zone_name', x='risk_score', orientation='h',
+    color='risk_score', color_continuous_scale='YlOrRd',
+    labels={'zone_name':'Zone','risk_score':'Risk Score (0–100)'}
 )
-fig.update_layout(
-    showlegend=False,
-    height=400,
-    xaxis_range=[75, 100]
-)
+fig.update_layout(showlegend=False, height=420, xaxis_range=[75,100])
 st.plotly_chart(fig, use_container_width=True)
 
-st.divider()
-
-# What it means section
-st.markdown("### 🎯 What This Means For You")
-
-# Add new section about wildland-urban interface
-with st.expander("🏘️ **Understanding the Wildland-Urban Interface (WUI)**", expanded=True):
-    st.markdown("""
-    ### What Is the Wildland-Urban Interface?
-    
-    The Wildland-Urban Interface (WUI) is where houses and wildland vegetation meet. Think of it as the 
-    "edge" where neighborhoods bump up against forests, brush, and canyons.
-    
-    **Why It's Dangerous:**
-    
-    In these areas, your home becomes part of the fuel:
-    - **Embers travel** - Wind-blown embers can land on wood decks, in gutters, or near fences
-    - **Radiant heat** - The heat from nearby burning vegetation can ignite your home before flames arrive
-    - **Continuous fuel** - Brush touching your fence, trees over your roof create a path for fire
-    
-    **Real Examples from Southern California:**
-    
-    - **Paradise Fire (2018)** - 85 people died, mostly trapped on evacuation routes with only 1-2 exits
-    - **Woolsey Fire (2018, Malibu)** - Homes built in canyons with wooden decks burned when embers landed
-    - **Holy Fire (2018, Orange County)** - Hillside homes with no defensible space lost, while those with cleared space survived
-    
-    **The Pattern:** Communities built in beautiful canyons and hillsides look amazing, but they're built 
-    in the exact places that fires naturally burn. Add strong winds, and fires move faster than people can evacuate.
-    """)
-
-st.divider()
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("#### If You Live In These Areas:")
-    st.markdown("""
-    1. **Know your zone's risk level** - Check the map above
-    2. **Create defensible space** - Clear brush 100ft from your home
-    3. **Harden your home** - Replace wood roofs, cover vents, remove dead vegetation
-    4. **Have an evacuation plan** - Know 2 ways out, practice the route
-    5. **Sign up for alerts** - Get emergency notifications on your phone
-    6. **Prepare a go-bag** - Be ready to leave in 10 minutes
-    """)
-
-with col2:
-    st.markdown("#### Why These Zones Are High-Risk:")
-    st.markdown("""
-    **Geography & Weather:**
-    - **Santa Ana Winds** - Hot, dry winds that can spread fires at 100+ mph
-    - **Mountain Canyons** - Act like chimneys, pushing fires uphill rapidly
-    - **Dense Vegetation** - Dry brush, chaparral, and forests fuel fires
-    
-    **How Communities Are Built:**
-    - **Homes in Wildlands** - Built directly in or next to fire-prone brush and forests
-    - **Narrow Canyon Roads** - Only one or two ways out, creating evacuation bottlenecks  
-    - **Wooden Decks & Roofs** - Construction materials that catch embers easily
-    - **No Defensible Space** - Houses surrounded by flammable vegetation within 30 feet
-    - **Remote Locations** - Far from fire stations, limited water for firefighting
-    
-    These areas are called the "Wildland-Urban Interface" - where homes meet wildland. 
-    **When fire comes, it burns both the forest AND the neighborhood together.**
-    """)
-
-st.divider()
-
-# Simple methodology
-with st.expander("ℹ️ How We Calculated Risk"):
-    st.markdown("""
-    ### Simple Risk Scoring
-    
-    Each zone's risk score is based on:
-    
-    - **Past Fires** (30%) - Has it burned before?
-    - **Weather** (25%) - Is it in a Santa Ana wind zone?
-    - **Vegetation** (20%) - How much dry brush and trees?
-    - **Communities** (15%) - How many homes are there?
-    - **Access** (10%) - Can firefighters get there easily?
-    
-    **Data Sources:**
-    - CAL FIRE (California fire history)
-    - County records (home counts)
-    - NOAA (weather patterns)
-    - Local fire departments
-    
-    **Important:** Risk scores show probability and impact, but they can't predict 
-    exactly when or where a fire will start. Weather and human actions also matter.
-    """)
-
-st.markdown("---")
-st.caption("🔥 Southern California Wildfire Risk Analysis | Data: CAL FIRE, County Records, NOAA | By Luba Hristova")
+st.caption("Heat map behavior follows ArcGIS Insights: relative densities by zoom/extent with a user-tunable radius and optional numeric weighting.")
