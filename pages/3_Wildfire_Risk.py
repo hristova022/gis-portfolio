@@ -13,8 +13,8 @@ st.subheader("Clear, data-driven mapping for anyone — using CAL FIRE/FRAP fire
 @st.cache_data
 def load_data():
     base = "https://raw.githubusercontent.com/hristova022/gis-portfolio/main/data/"
-    pts   = pd.read_csv(base + "wildfire_points_real.csv")      # real points (centroids)
-    sm    = pd.read_csv(base + "wildfire_summary.csv")          # data-driven zone metrics
+    pts   = pd.read_csv(base + "wildfire_points_real.csv")
+    sm    = pd.read_csv(base + "wildfire_summary.csv")
     det   = requests.get(base + "wildfire_zones_detailed.json").json()
     bnds  = requests.get(base + "wildfire_kde_bounds.json").json()
     png   = base + "wildfire_kde.png"
@@ -29,7 +29,6 @@ zones_count = META["counts"]["zones_evaluated"]
 year_min    = META["counts"]["years_covered_min"]
 year_max    = META["counts"]["years_covered_max"]
 half_life   = META["recency_weighting"]["half_life_years"]
-last_updated = datetime.date.today().isoformat()
 
 c1, c2, c3, c4 = st.columns(4)
 with c1: st.metric("Data coverage (years)", f"{year_min}–{year_max}")
@@ -39,26 +38,21 @@ with c4: st.metric("📅 Recency weighting", f"Half-life ≈ {half_life} years")
 
 st.markdown("---")
 
-# --------- 2-minute tour (plain language) ---------
+# --------- Short orientation (kept concise) ---------
 with st.container(border=True):
-    st.markdown("### 🧭 A 2-minute tour — How to read this page")
+    st.markdown("### What you're looking at")
     st.markdown("""
-- **This is not a forecast.** It maps **where fires have clustered** in the past (and more recently),
-  which helps show **areas of persistent risk**.
-- **Two layers** on the map:
-  1) **Heat Map (points):** a smooth glow where many historical fires cluster. Brighter = **more activity nearby**.
-  2) **Kernel Density (KDE):** an analytical surface (in meters) summarizing fire activity across the region.
-- **Controls** let you adjust the **radius**, **intensity**, and whether to weight by **recent** fires
-  (emphasize the last decade) or **historical size** (long-term patterns).
-- **Zoom & pan** like any web map. The heat map is **relative to your current view** (like Esri’s Heat Map).
+- A **Heat Map (points)** shows where historical fires cluster. Brighter = more nearby activity.
+- A **Kernel Density (KDE)** surface (meters) summarizes activity across the region.
+- **Controls** let you adjust radius, intensity, threshold, and whether to emphasize **recent** fires or **long-term size**.
+- The heat map is **relative to your current view**; the KDE is **fixed in meters**.
 """)
 
-# --------- Map controls (with palette toggle) ---------
+# --------- Map controls (palette toggle) ---------
 st.markdown("### 🗺️ Interactive wildfire heat surface")
 colA, colB, colC, colD, colE = st.columns([1.1,1,1,1,1])
 with colA:
-    weight_field = st.selectbox("Weight fires by", ["weight_recent","weight_hist"], index=0,
-        help="• recent = emphasizes the last ~10 years\n• hist = long-term magnitude (log of burned acres)")
+    weight_field = st.selectbox("Weight fires by", ["weight_recent","weight_hist"], index=0)
 with colB:
     radius_px = st.slider("Heatmap radius (px)", 15, 120, 45)
 with colC:
@@ -82,7 +76,6 @@ PALETTES = {
 show_kde = st.checkbox("Show Kernel Density overlay (meters)", True)
 kde_opac = st.slider("KDE opacity", 0.2, 1.0, 0.65) if show_kde else 0.0
 
-# --------- Build map layers ---------
 layers = []
 heat = pdk.Layer(
     "HeatmapLayer",
@@ -108,29 +101,9 @@ deck = pdk.Deck(layers=layers, initial_view_state=view_state,
                 map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json')
 st.pydeck_chart(deck, use_container_width=True)
 
-# --------- Gentle “how to” hints ---------
-colH1, colH2 = st.columns([3,1])
-with colH1:
-    st.markdown("**Tip:** Brighter colors = more historical fire activity. Switch to **weight_hist** for long-term corridors or **weight_recent** for recent hotspots.")
-with colH2:
-    st.info("💡 The heat map is **relative** to your current view.\nThe KDE overlay is **fixed in meters**.")
-
 st.markdown("---")
 
-# --------- Storytelling for non-experts ---------
-st.markdown("### 🔍 What this map shows — in plain English")
-colS1, colS2, colS3 = st.columns(3)
-with colS1:
-    st.markdown("#### 📅 Past")
-    st.markdown(f"We include **years {year_min}–{year_max}**. Larger historical fires carry more weight.")
-with colS2:
-    st.markdown("#### 🔴 Present")
-    st.markdown("**Recent fires** (last ~10 years) are emphasized when you pick *recent* weighting. This highlights **active corridors** under current conditions.")
-with colS3:
-    st.markdown("#### 🔮 Future")
-    st.markdown("This is **not a forecast**, but it shows **where risk tends to cluster**. For future scenarios, analysts can adjust the KDE with climate or development projections.")
-
-# --------- Zone details (clear wording) ---------
+# --------- Zone details ---------
 st.markdown("### 📍 Eight well-known high-risk areas")
 zone_names = summary['zone_name'].tolist()
 selected_zone = st.selectbox("Select a zone:", zone_names, index=0)
@@ -159,17 +132,8 @@ fig = px.bar(
 fig.update_layout(showlegend=False, height=420, xaxis_range=[0,100])
 st.plotly_chart(fig, use_container_width=True)
 
-# --------- Non-expert guide sections ---------
-with st.expander("ℹ️ Quick glossary (no jargon)", expanded=False):
-    st.markdown("""
-- **Heat map:** A smooth glow that shows **where many points are close together**. Here, the points are **fire centroids**.
-- **Kernel Density (KDE):** A method that spreads each point into a small bump and **adds them up** to make a smooth surface.
-- **Relative vs fixed:** The Heat Map is **relative** to your screen's current view; the KDE uses **fixed distances in meters**.
-- **Weighting:** Count each fire equally (**recent**) or give bigger fires more influence (**hist** = log of burned acres).
-- **WUI:** Wildland-Urban Interface — where neighborhoods border wildland vegetation; losses can be severe here.
-""")
-
-with st.expander("🧪 Methodology (exact math & settings)", expanded=False):
+# --------- Methodology & provenance (concise) ---------
+with st.expander("🧪 Methodology (math & settings)", expanded=False):
     st.markdown(f"""
 **Weights**
 - `weight_hist` = `log(1 + acres)`  
@@ -177,16 +141,15 @@ with st.expander("🧪 Methodology (exact math & settings)", expanded=False):
 
 **KDE (Spatial Analyst analog)**
 - CRS: **{META['kde']['crs']}**, Kernel: **{META['kde']['kernel']}**  
-- Cell size: **{META['kde']['cell_m']} m**, Bandwidth (search radius): **{META['kde']['bandwidth_m']} m**  
-- Fast mode: **{META['kde']['fast_mode']}**, Weight used in KDE: **{META['weights']['weight_recent_uses']}**
+- Cell size: **{META['kde']['cell_m']} m**, Bandwidth: **{META['kde']['bandwidth_m']} m**  
+- Land-clipped: **{META['kde']['land_clip']}**, Weight used: **{META['weights']['weight_recent_uses']}**
 
 **Zone scores (0–100)**
-1) For each of 8 named zones, gather fires within **25 km** (haversine).  
-2) Compute **count** and **total burned acres**.  
-3) Normalize each to 0–100; score = **0.5 × count_norm + 0.5 × acres_norm**.
+1) Fires + acres within **25 km** per zone.  
+2) Normalize each, score = **0.5 × count_norm + 0.5 × acres_norm**.
 """)
 
-with st.expander("📥 Data source & query (provenance)", expanded=False):
+with st.expander("📥 Data source & query", expanded=False):
     bbox = META["data_source"]["bbox"]
     st.markdown(f"""
 **Service:**  
@@ -198,7 +161,8 @@ xmin **{bbox['xmin']}**, ymin **{bbox['ymin']}**, xmax **{bbox['xmax']}**, ymax 
 **Filters:**  
 - `YEAR_ >= {META['data_source']['filters']['YEARS_MIN']}`  
 - `GIS_ACRES >= {META['data_source']['filters']['ACRES_MIN']}`  
-- returned **centroid-only** geometry; fields: {", ".join(META['data_source']['out_fields'])}
+- returned **centroid-only** geometry; fields: {", ".join(META['data_source']['out_fields'])}  
+- Land source for clipping: **{META['data_source']['land_source']}**
 
 **Downloads:**  
 - Points CSV: [{BASE_URL}wildfire_points_real.csv]({BASE_URL}wildfire_points_real.csv)  
@@ -208,12 +172,4 @@ xmin **{bbox['xmin']}**, ymin **{bbox['ymin']}**, xmax **{bbox['xmax']}**, ymax 
 - Methodology JSON: [{BASE_URL}wildfire_methodology.json]({BASE_URL}wildfire_methodology.json)
 """)
 
-with st.expander("🏘️ If you live in a high-risk area", expanded=False):
-    st.markdown("""
-- Create **defensible space** (clear dry vegetation, trim trees near structures).
-- **Harden your home** (ember-resistant vents, Class-A roof, clean gutters).
-- Plan **two ways out**; sign up for **local emergency alerts**.
-- Talk with neighbors and prepare a **go-bag** for fast evacuations.
-""")
-
-st.caption("This page summarizes where wildfire activity has clustered in Southern California using public data. Heat map = visual density (relative). KDE = analytical density (meters). Not a forecast or official hazard designation.")
+st.caption("This summarizes where wildfire activity has clustered in Southern California using public data. Heat map = visual density (relative). KDE = analytical density (meters). Not a forecast or official hazard designation.")
