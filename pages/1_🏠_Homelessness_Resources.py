@@ -4,9 +4,9 @@ import json
 import pydeck as pdk
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="LA County Homeless Analysis | GIS Portfolio", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="LA County Homelessness Analysis | GIS Portfolio", page_icon="🏠🏠", layout="wide")
 
-st.title("🏠 LA County Homeless Services: Are We Keeping Pace?")
+st.title("🏠 LA County Homelessness Services: Are We Keeping Pace?")
 
 @st.cache_data(ttl=60)
 def load_data():
@@ -49,7 +49,7 @@ if has_temporal:
         df_trends = pd.DataFrame(data['homeless_trends'])
         year_data = df_trends[df_trends['year'] == selected_year].iloc[0] if selected_year in df_trends['year'].values else df_trends.iloc[-1]
         
-        st.metric("Homeless Count", f"{int(year_data['homeless_count']):,}")
+        st.metric("Homelessness Count", f"{int(year_data['homeless_count']):,}")
         st.metric("Shelter Beds", f"{int(year_data['total_beds']):,}")
         st.metric("Beds per 100", f"{year_data['beds_per_100_homeless']:.1f}")
     
@@ -62,7 +62,7 @@ if has_temporal:
         
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=df_trends_norm['year'], y=df_trends_norm['homeless_index'],
-            name='Homeless Population', line=dict(color='red', width=3), mode='lines+markers'))
+            name='Homelessness Population', line=dict(color='red', width=3), mode='lines+markers'))
         fig.add_trace(go.Scatter(x=df_trends_norm['year'], y=df_trends_norm['beds_index'],
             name='Shelter Capacity', line=dict(color='green', width=3), mode='lines+markers'))
         fig.update_layout(yaxis_title='Growth Index (2015 = 100)', xaxis_title='Year',
@@ -494,7 +494,7 @@ with tab1:
     **Primary Geospatial Data:**
     - **OpenStreetMap** - [openstreetmap.org](https://www.openstreetmap.org/) - Community-maintained global database
     - **Manual Verification** - Cross-referenced with [LAHSA](https://www.lahsa.org/) and [211 LA County](https://211la.org/)
-    - **Historical Homeless Count** - [LAHSA Point-in-Time Count](https://www.lahsa.org/data) (2015-2024)
+    - **Historical Homelessness Count** - [LAHSA Point-in-Time Count](https://www.lahsa.org/data) (2015-2024)
     
     **Query Method:**
     - Used Overpass API to query facilities tagged as shelters, food banks, and social facilities
@@ -517,7 +517,7 @@ with tab2:
     **2. Temporal Trend Analysis**
     - Historical comparison 2015-2025
     - Per-capita metrics (beds per 100 homeless individuals)
-    - Gap calculation: Homeless growth % - Shelter capacity growth %
+    - Gap calculation: Homelessness growth % - Shelter capacity growth %
     - Linear projection for 2027 forecast
     
     **3. Tools Used**

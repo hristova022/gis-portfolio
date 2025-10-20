@@ -3,7 +3,7 @@ import pandas as pd
 import pydeck as pdk
 import os
 
-st.set_page_config(page_title="Long Beach Parking Analysis", page_icon="🅿️", layout="wide")
+st.set_page_config(page_title="Long Beach Parking Analysis", page_icon="🅿️🅿️", layout="wide")
 
 st.title("🅿️ Long Beach Parking Crisis Analysis")
 st.subheader("A Data-Driven Look at Why Finding Parking Feels Impossible")
