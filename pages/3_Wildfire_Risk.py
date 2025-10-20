@@ -19,11 +19,12 @@ def load_data():
     bnds  = requests.get(base + "wildfire_kde_bounds.json").json()
     png   = base + "wildfire_kde.png"
     meta  = requests.get(base + "wildfire_methodology.json").json()
-    return pts, sm, det, bnds, png, base, meta
+    ocean = requests.get(base + "ocean_mask_polys.json").json()
+    return pts, sm, det, bnds, png, base, meta, ocean
 
-points, summary, details, kde_bounds, kde_png, BASE_URL, META = load_data()
+points, summary, details, kde_bounds, kde_png, BASE_URL, META, OCEAN_POLYS = load_data()
 
-# --------- Top summary driven by metadata ---------
+# ---- Top summary from metadata ----
 pts_count   = META["counts"]["points_filtered"]
 zones_count = META["counts"]["zones_evaluated"]
 year_min    = META["counts"]["years_covered_min"]
@@ -38,21 +39,25 @@ with c4: st.metric("📅 Recency weighting", f"Half-life ≈ {half_life} years")
 
 st.markdown("---")
 
-# --------- Short orientation (kept concise) ---------
+# ---- What you're looking at (add KDE explanation) ----
 with st.container(border=True):
     st.markdown("### What you're looking at")
     st.markdown("""
-- A **Heat Map (points)** shows where historical fires cluster. Brighter = more nearby activity.
-- A **Kernel Density (KDE)** surface (meters) summarizes activity across the region.
-- **Controls** let you adjust radius, intensity, threshold, and whether to emphasize **recent** fires or **long-term size**.
-- The heat map is **relative to your current view**; the KDE is **fixed in meters**.
+- **Heat Map (points)** shows where historical fires cluster. Brighter = more nearby activity at your current zoom (Esri-style behavior).
+- **Kernel Density (KDE)** builds a smooth surface in **meters**: each fire is treated like a small mound that softly spreads out; where many mounds overlap, the surface rises. We compute it in a meter-based projection (EPSG:3310) with a fixed search radius, and **clip it to land** so oceans and bays are transparent.
+- Use the controls below to emphasize **recent activity** (recency × size) or **long-term activity** (size only), and to adjust the heat-map radius and intensity.
 """)
 
-# --------- Map controls (palette toggle) ---------
+# ---- Controls (friendly labels) ----
 st.markdown("### 🗺️ Interactive wildfire heat surface")
-colA, colB, colC, colD, colE = st.columns([1.1,1,1,1,1])
+label_to_field = {
+    "Recent Activity (recency × size)": "weight_recent",
+    "Long-Term Activity (size only)": "weight_hist",
+}
+colA, colB, colC, colD, colE, colF = st.columns([1.6,1,1,1,1,1.3])
 with colA:
-    weight_field = st.selectbox("Weight fires by", ["weight_recent","weight_hist"], index=0)
+    weight_label = st.selectbox("Emphasize", list(label_to_field.keys()), index=0)
+    weight_field = label_to_field[weight_label]
 with colB:
     radius_px = st.slider("Heatmap radius (px)", 15, 120, 45)
 with colC:
@@ -60,7 +65,9 @@ with colC:
 with colD:
     threshold  = st.slider("Threshold", 0.0, 1.0, 0.05, 0.01)
 with colE:
-    palette = st.selectbox("Color palette", ["YlOrRd (classic)", "Viridis (colorblind-friendly)"], index=0)
+    palette = st.selectbox("Palette", ["YlOrRd (classic)", "Viridis (colorblind-friendly)"], index=0)
+with colF:
+    ocean_mask_on = st.checkbox("Hide heat over water", True, help="Adds a light ocean overlay so glow does not appear offshore.")
 
 PALETTES = {
     "YlOrRd (classic)": [
@@ -73,10 +80,9 @@ PALETTES = {
     ],
 }
 
-show_kde = st.checkbox("Show Kernel Density overlay (meters)", True)
-kde_opac = st.slider("KDE opacity", 0.2, 1.0, 0.65) if show_kde else 0.0
-
 layers = []
+
+# Heat map (point-based, zoom-relative)
 heat = pdk.Layer(
     "HeatmapLayer",
     data=points,
@@ -91,10 +97,23 @@ heat = pdk.Layer(
 )
 layers.append(heat)
 
-if show_kde:
-    b = [kde_bounds["west"], kde_bounds["south"], kde_bounds["east"], kde_bounds["north"]]
-    bmp = pdk.Layer("BitmapLayer", data=None, image=kde_png, bounds=b, opacity=kde_opac)
-    layers.append(bmp)
+# Analytical KDE bitmap (already clipped to land)
+b = [kde_bounds["west"], kde_bounds["south"], kde_bounds["east"], kde_bounds["north"]]
+layers.append(pdk.Layer("BitmapLayer", data=None, image=kde_png, bounds=b, opacity=0.65))
+
+# Optional ocean overlay to visually mask any heatmap glow over water
+if ocean_mask_on and len(OCEAN_POLYS) > 0:
+    ocean_color = [228, 235, 240, 230]  # soft light-grey water to match basemap
+    ocean_data = [{"poly": p} for p in OCEAN_POLYS]
+    ocean_layer = pdk.Layer(
+        "PolygonLayer",
+        data=ocean_data,
+        get_polygon="poly",
+        get_fill_color=ocean_color,
+        stroked=False,
+        pickable=False
+    )
+    layers.append(ocean_layer)
 
 view_state = pdk.ViewState(latitude=34.0, longitude=-118.2, zoom=7)
 deck = pdk.Deck(layers=layers, initial_view_state=view_state,
@@ -103,7 +122,7 @@ st.pydeck_chart(deck, use_container_width=True)
 
 st.markdown("---")
 
-# --------- Zone details ---------
+# ---- Zone details ----
 st.markdown("### 📍 Eight well-known high-risk areas")
 zone_names = summary['zone_name'].tolist()
 selected_zone = st.selectbox("Select a zone:", zone_names, index=0)
@@ -132,21 +151,21 @@ fig = px.bar(
 fig.update_layout(showlegend=False, height=420, xaxis_range=[0,100])
 st.plotly_chart(fig, use_container_width=True)
 
-# --------- Methodology & provenance (concise) ---------
+# ---- Methodology & provenance (concise) ----
 with st.expander("🧪 Methodology (math & settings)", expanded=False):
     st.markdown(f"""
 **Weights**
-- `weight_hist` = `log(1 + acres)`  
-- `weight_recent` = `weight_hist × exp(-(this_year - YEAR_) / {half_life})`
+- *Long-Term Activity*: `weight_hist = log(1 + acres)`  
+- *Recent Activity*: `weight_recent = weight_hist × exp(-(this_year − YEAR_) / {half_life})`
 
-**KDE (Spatial Analyst analog)**
+**KDE (fixed-distance surface)**
 - CRS: **{META['kde']['crs']}**, Kernel: **{META['kde']['kernel']}**  
 - Cell size: **{META['kde']['cell_m']} m**, Bandwidth: **{META['kde']['bandwidth_m']} m**  
-- Land-clipped: **{META['kde']['land_clip']}**, Weight used: **{META['weights']['weight_recent_uses']}**
+- **Clipped to land** to avoid any ocean/bay glow.
 
 **Zone scores (0–100)**
-1) Fires + acres within **25 km** per zone.  
-2) Normalize each, score = **0.5 × count_norm + 0.5 × acres_norm**.
+1) Count fires and total burned acres within **25 km** of each zone center.  
+2) Normalize each to 0–100; score = **0.5 × count_norm + 0.5 × acres_norm**.
 """)
 
 with st.expander("📥 Data source & query", expanded=False):
@@ -155,14 +174,13 @@ with st.expander("📥 Data source & query", expanded=False):
 **Service:**  
 {META['data_source']['service_url']}
 
-**Extent (SoCal BBOX):**  
-xmin **{bbox['xmin']}**, ymin **{bbox['ymin']}**, xmax **{bbox['xmax']}**, ymax **{bbox['ymax']}**
+**Extent:** xmin **{bbox['xmin']}**, ymin **{bbox['ymin']}**, xmax **{bbox['xmax']}**, ymax **{bbox['ymax']}**
 
 **Filters:**  
 - `YEAR_ >= {META['data_source']['filters']['YEARS_MIN']}`  
 - `GIS_ACRES >= {META['data_source']['filters']['ACRES_MIN']}`  
-- returned **centroid-only** geometry; fields: {", ".join(META['data_source']['out_fields'])}  
-- Land source for clipping: **{META['data_source']['land_source']}**
+- Returned **centroid-only** geometry; fields: FIRE_NAME, YEAR_, GIS_ACRES  
+- Land source for masking: **{META['data_source']['land_source']}**
 
 **Downloads:**  
 - Points CSV: [{BASE_URL}wildfire_points_real.csv]({BASE_URL}wildfire_points_real.csv)  
@@ -172,4 +190,4 @@ xmin **{bbox['xmin']}**, ymin **{bbox['ymin']}**, xmax **{bbox['xmax']}**, ymax 
 - Methodology JSON: [{BASE_URL}wildfire_methodology.json]({BASE_URL}wildfire_methodology.json)
 """)
 
-st.caption("This summarizes where wildfire activity has clustered in Southern California using public data. Heat map = visual density (relative). KDE = analytical density (meters). Not a forecast or official hazard designation.")
+st.caption("This summarizes where wildfire activity has clustered in Southern California using public data. Heat map = visual density (zoom-relative). KDE = analytical surface in meters (fixed distance), land-clipped. Not a forecast or official hazard designation.")
