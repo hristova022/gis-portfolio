@@ -1,9 +1,9 @@
 zone_name,area,latitude,longitude,fires_since_2000,burned_acres_since_2000,description,risk_score,key_factors
-Angeles National Forest,Los Angeles County,34.35,-118.15,22,202696,Steep terrain with dense chaparral. High wind exposure.,38.0,"Topography, chaparral, Santa Ana winds"
-San Bernardino Mountains,San Bernardino County,34.2,-117.15,51,88093,Mountain communities surrounded by dry forest and brush.,57.0,"High-elevation forests, WUI canyons"
-Malibu & Santa Monica Mountains,Los Angeles/Ventura Counties,34.05,-118.75,23,121327,Coastal chaparral with intense WUI exposure.,26.0,"Coastal canyons, dense WUI, winds"
-Ventura County Hills,Ventura County,34.4,-119.1,26,321933,Dry hillsides flanking agricultural valleys.,62.0,"Dry hills, wind exposure"
-Riverside/Corona Foothills,Riverside County,33.88,-117.38,44,37362,Rapidly growing WUI at canyon mouths.,40.0,"Canyon mouths, fast-growing WUI"
-Orange County Foothills,Orange County,33.65,-117.65,33,84931,Narrow canyons and dense WUI.,33.0,"Narrow canyons, dense WUI"
-San Diego Backcountry,San Diego County,33.05,-116.85,17,3458,"Hot, dry backcountry with limited access.",0.0,"Hot/dry climate, remote access"
-Inland Empire - San Jacinto,Riverside County,33.75,-116.95,56,98319,Mountain/desert interface communities.,65.0,"Mountain/desert interface, limited water"
+Angeles National Forest,Los Angeles County,34.35,-118.15,22,202696,"Steep terrain with dense chaparral (dry, woody shrubland common in SoCal) and high wind exposure.",38.0,Topography; Santa Ana winds; chaparral (dry shrubland)
+San Bernardino Mountains,San Bernardino County,34.2,-117.15,51,88093,Mountain communities surrounded by dry forest/chaparral (dense shrubland).,57.0,High-elevation forests; WUI canyons; chaparral
+Malibu & Santa Monica Mountains,Los Angeles/Ventura Counties,34.05,-118.75,23,121327,Coastal canyons with dense chaparral (dry shrubland) and intense WUI exposure.,26.0,Coastal canyons; dense chaparral; winds; WUI
+Ventura County Hills,Ventura County,34.4,-119.1,26,321933,Dry hillsides flanking agricultural valleys; chaparral (dry shrubland) fuels.,62.0,Dry hills; wind exposure; chaparral
+Riverside/Corona Foothills,Riverside County,33.88,-117.38,44,37362,Rapidly growing WUI at canyon mouths; chaparral (dry shrubland).,40.0,Canyon mouths; fast-growing WUI; chaparral
+Orange County Foothills,Orange County,33.65,-117.65,33,84931,Narrow canyons with chaparral (dry shrubland) close to homes.,33.0,Narrow canyons; dense WUI; chaparral
+San Diego Backcountry,San Diego County,33.05,-116.85,17,3458,"Hot, dry backcountry with chaparral (dry shrubland) and limited access.",0.0,Hot/dry climate; remote access; chaparral
+Inland Empire - San Jacinto,Riverside County,33.75,-116.95,56,98319,Mountain/desert interface; chaparral (dry shrubland) and limited water.,65.0,Mountain/desert interface; limited water; chaparral
