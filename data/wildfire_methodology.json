@@ -17,7 +17,8 @@
       "YEAR_",
       "GIS_ACRES"
     ],
-    "projection_points": "EPSG:4326"
+    "projection_points": "EPSG:4326",
+    "land_source": "Natural Earth 1:10m Land (nvkelso/natural-earth-vector)"
   },
   "recency_weighting": {
     "half_life_years": 10,
@@ -32,7 +33,8 @@
     "cell_m": 1500,
     "bandwidth_m": 10000,
     "fast_mode": true,
-    "kernel": "gaussian"
+    "kernel": "gaussian",
+    "land_clip": true
   },
   "counts": {
     "points_filtered": 986,
@@ -40,5 +42,5 @@
     "years_covered_min": 2010,
     "years_covered_max": 2025
   },
-  "generated_at": "2025-10-20T20:30:34.933336Z"
+  "generated_at": "2025-10-20T20:42:10.300580Z"
 }
