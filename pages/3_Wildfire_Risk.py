@@ -63,13 +63,13 @@ with col3:
 
 st.divider()
 
-# COMPLETE BLANKET COVERAGE HEAT MAP
+# PROPER HEXAGONAL HEAT MAP - AGGREGATED
 st.markdown("### 🗺️ Southern California Wildfire Risk Heat Map")
-st.markdown("**Complete blanket coverage with ~1.2 million data points. Every part of SoCal shown.**")
+st.markdown("**Hexagonal aggregation showing risk patterns across the region.**")
 
 import pydeck as pdk
 
-# Very small hexagons for complete visible coverage
+# BIGGER hexagons that aggregate properly - not tiny dots
 hex_layer = pdk.Layer(
     "HexagonLayer",
     data=zones,
@@ -83,17 +83,15 @@ hex_layer = pdk.Layer(
     get_elevation_weight="risk_score",
     get_color_weight="risk_score",
     color_range=[
-        [255, 255, 240],  # Almost white - very low risk (15-20)
-        [255, 255, 200],  # Very light yellow (20-30)
-        [255, 247, 170],  # Light yellow (30-40)
-        [254, 227, 145],  # Yellow (40-50)
-        [254, 196, 79],   # Yellow-orange (50-60)
-        [254, 153, 41],   # Orange (60-70)
-        [236, 112, 20],   # Dark orange (70-80)
-        [204, 76, 2],     # Red-orange (80-90)
-        [153, 52, 4],     # Dark red (90+)
+        [255, 255, 204],  # Light yellow
+        [254, 217, 118],  # Yellow
+        [254, 178, 76],   # Yellow-orange
+        [253, 141, 60],   # Orange
+        [252, 78, 42],    # Orange-red
+        [227, 26, 28],    # Red
+        [189, 0, 38],     # Dark red
     ],
-    radius=800,  # Very small (800m) for maximum density display
+    radius=10000,  # 10km hexagons - aggregates properly
     upper_percentile=100,
     lower_percentile=0,
 )
@@ -101,16 +99,14 @@ hex_layer = pdk.Layer(
 view_state = pdk.ViewState(
     latitude=34.0,
     longitude=-118.0,
-    zoom=7.3,
+    zoom=7,
     pitch=0,
     bearing=0
 )
 
 tooltip = {
-    "html": "<div style='background: rgba(0,0,0,0.9); padding: 8px 12px; border-radius: 4px;'>"
-            "<p style='margin: 0; color: white; font-size: 13px;'><b>Risk:</b> {elevationValue:.0f}/100</p>"
-            "</div>",
-    "style": {"backgroundColor": "transparent"}
+    "html": "<b>Risk: {elevationValue:.0f}/100</b>",
+    "style": {"backgroundColor": "black", "color": "white", "padding": "8px"}
 }
 
 deck = pdk.Deck(
@@ -124,10 +120,10 @@ st.pydeck_chart(deck, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("**Complete blanket coverage** - ~1.2 million points with 0.2-mile spacing covering EVERY part of SoCal")
-    st.caption("From San Diego to Santa Barbara, coast to desert. ALL areas shown with risk values.")
+    st.markdown("**Proper hexagonal aggregation** - Hexagons aggregate nearby data points to show patterns")
+    st.caption("Yellow = lower risk areas → Orange = elevated risk → Red = high risk zones")
 with col2:
-    st.info("💡 Zoom to explore")
+    st.info("💡 Hover hexagons")
 
 # Add context about past/present/future
 st.markdown("---")
