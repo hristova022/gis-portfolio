@@ -63,13 +63,13 @@ with col3:
 
 st.divider()
 
-# PROFESSIONAL HEXAGONAL HEAT MAP - Full SoCal Coverage
+# COMPLETE BLANKET COVERAGE HEAT MAP
 st.markdown("### 🗺️ Southern California Wildfire Risk Heat Map")
-st.markdown("**Hexagonal analysis covering the entire region. Darker colors = higher risk.**")
+st.markdown("**Complete blanket coverage with ~1.2 million data points. Every part of SoCal shown.**")
 
 import pydeck as pdk
 
-# Create hexagon layer with proper coverage
+# Very small hexagons for complete visible coverage
 hex_layer = pdk.Layer(
     "HexagonLayer",
     data=zones,
@@ -83,31 +83,32 @@ hex_layer = pdk.Layer(
     get_elevation_weight="risk_score",
     get_color_weight="risk_score",
     color_range=[
-        [255, 255, 204],  # Very light yellow - 20-30
-        [255, 237, 160],  # Light yellow - 30-40
-        [254, 217, 118],  # Yellow - 40-50
-        [254, 178, 76],   # Yellow-orange - 50-60
-        [253, 141, 60],   # Orange - 60-70
-        [252, 78, 42],    # Orange-red - 70-80
-        [227, 26, 28],    # Red - 80-90
-        [189, 0, 38],     # Dark red - 90+
+        [255, 255, 240],  # Almost white - very low risk (15-20)
+        [255, 255, 200],  # Very light yellow (20-30)
+        [255, 247, 170],  # Light yellow (30-40)
+        [254, 227, 145],  # Yellow (40-50)
+        [254, 196, 79],   # Yellow-orange (50-60)
+        [254, 153, 41],   # Orange (60-70)
+        [236, 112, 20],   # Dark orange (70-80)
+        [204, 76, 2],     # Red-orange (80-90)
+        [153, 52, 4],     # Dark red (90+)
     ],
-    radius=4000,
+    radius=800,  # Very small (800m) for maximum density display
     upper_percentile=100,
     lower_percentile=0,
 )
 
 view_state = pdk.ViewState(
-    latitude=33.9,
-    longitude=-117.5,
-    zoom=7.5,
+    latitude=34.0,
+    longitude=-118.0,
+    zoom=7.3,
     pitch=0,
     bearing=0
 )
 
 tooltip = {
-    "html": "<div style='background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px;'>"
-            "<p style='margin: 0; color: white; font-size: 12px;'>Risk Score: {elevationValue:.0f}/100</p>"
+    "html": "<div style='background: rgba(0,0,0,0.9); padding: 8px 12px; border-radius: 4px;'>"
+            "<p style='margin: 0; color: white; font-size: 13px;'><b>Risk:</b> {elevationValue:.0f}/100</p>"
             "</div>",
     "style": {"backgroundColor": "transparent"}
 }
@@ -123,10 +124,10 @@ st.pydeck_chart(deck, use_container_width=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.markdown("**Professional GIS hexagonal analysis** - Complete coverage across Southern California")
-    st.caption("Hover over hexagons to see risk scores. Yellow = lower risk → Orange = high risk → Red = extreme risk")
+    st.markdown("**Complete blanket coverage** - ~1.2 million points with 0.2-mile spacing covering EVERY part of SoCal")
+    st.caption("From San Diego to Santa Barbara, coast to desert. ALL areas shown with risk values.")
 with col2:
-    st.info("💡 Hover for risk values")
+    st.info("💡 Zoom to explore")
 
 # Add context about past/present/future
 st.markdown("---")
