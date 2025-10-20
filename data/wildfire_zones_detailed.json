@@ -4,55 +4,55 @@
     "lat": 34.35,
     "lon": -118.15,
     "area": "Los Angeles County",
-    "description": "Steep terrain with dense chaparral. High wind exposure."
+    "description": "Steep terrain with dense chaparral (dry, woody shrubland common in SoCal) and high wind exposure."
   },
   {
     "name": "San Bernardino Mountains",
     "lat": 34.2,
     "lon": -117.15,
     "area": "San Bernardino County",
-    "description": "Mountain communities surrounded by dry forest and brush."
+    "description": "Mountain communities surrounded by dry forest/chaparral (dense shrubland)."
   },
   {
     "name": "Malibu & Santa Monica Mountains",
     "lat": 34.05,
     "lon": -118.75,
     "area": "Los Angeles/Ventura Counties",
-    "description": "Coastal chaparral with intense WUI exposure."
+    "description": "Coastal canyons with dense chaparral (dry shrubland) and intense WUI exposure."
   },
   {
     "name": "Ventura County Hills",
     "lat": 34.4,
     "lon": -119.1,
     "area": "Ventura County",
-    "description": "Dry hillsides flanking agricultural valleys."
+    "description": "Dry hillsides flanking agricultural valleys; chaparral (dry shrubland) fuels."
   },
   {
     "name": "Riverside/Corona Foothills",
     "lat": 33.88,
     "lon": -117.38,
     "area": "Riverside County",
-    "description": "Rapidly growing WUI at canyon mouths."
+    "description": "Rapidly growing WUI at canyon mouths; chaparral (dry shrubland)."
   },
   {
     "name": "Orange County Foothills",
     "lat": 33.65,
     "lon": -117.65,
     "area": "Orange County",
-    "description": "Narrow canyons and dense WUI."
+    "description": "Narrow canyons with chaparral (dry shrubland) close to homes."
   },
   {
     "name": "San Diego Backcountry",
     "lat": 33.05,
     "lon": -116.85,
     "area": "San Diego County",
-    "description": "Hot, dry backcountry with limited access."
+    "description": "Hot, dry backcountry with chaparral (dry shrubland) and limited access."
   },
   {
     "name": "Inland Empire - San Jacinto",
     "lat": 33.75,
     "lon": -116.95,
     "area": "Riverside County",
-    "description": "Mountain/desert interface communities."
+    "description": "Mountain/desert interface; chaparral (dry shrubland) and limited water."
   }
 ]
