@@ -59,7 +59,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     with st.container(border=True):
-        st.markdown("### 🏠 LA County Homeless Services Analysis")
+        st.markdown("### 🏠 Homelessness Resources LA County")
         st.markdown("""
         **Are we keeping pace with the crisis?**
         
@@ -79,7 +79,7 @@ with col1:
             st.switch_page("pages/1_Homeless_Resources.py")
     
     with st.container(border=True):
-        st.markdown("### 🅿️ Long Beach Parking Crisis Analysis")
+        st.markdown("### 🅿️ Long Beach Parking Analysis")
         st.markdown("""
         **Data-driven analysis of parking scarcity in Long Beach**
         
