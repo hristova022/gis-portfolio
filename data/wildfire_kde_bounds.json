@@ -1,0 +1,9 @@
+{
+  "west": -121.5,
+  "south": 32.5,
+  "east": -114.0,
+  "north": 35.5,
+  "crs": "EPSG:4326",
+  "pixel_width": 457,
+  "pixel_height": 233
+}
