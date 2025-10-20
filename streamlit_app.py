@@ -110,7 +110,7 @@ with col1:
 
 with col2:
     with st.container(border=True):
-        st.markdown("### 🔥 Southern California Wildfire Risk")
+        st.markdown("### 🔥 Southern California Wildfire Activity (Past & Recent)")
         st.markdown("""
         **8 major high-risk zones mapped and analyzed**
         
@@ -127,7 +127,7 @@ with col2:
         **Skills Demonstrated:** Risk modeling, spatial analysis, data synthesis 
         from multiple sources (CAL FIRE, NASA FIRMS, county records), clear data storytelling
         """)
-        if st.button("View Risk Analysis →", key="wildfire", use_container_width=True):
+        if st.button("View Activity Map →", key="wildfire", use_container_width=True):
             st.switch_page("pages/3_Wildfire_Risk.py")
     
     with st.container(border=True):
