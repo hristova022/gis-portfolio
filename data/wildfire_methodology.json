@@ -1,0 +1,44 @@
+{
+  "data_source": {
+    "service_url": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query",
+    "bbox": {
+      "xmin": -121.5,
+      "ymin": 32.5,
+      "xmax": -114.0,
+      "ymax": 35.5
+    },
+    "filters": {
+      "YEARS_MIN": 2010,
+      "ACRES_MIN": 25
+    },
+    "returned_geometry": "centroid-only",
+    "out_fields": [
+      "FIRE_NAME",
+      "YEAR_",
+      "GIS_ACRES"
+    ],
+    "projection_points": "EPSG:4326"
+  },
+  "recency_weighting": {
+    "half_life_years": 10,
+    "equation": "weight_recent = log1p(acres) * exp(-(this_year - YEAR_) / 10)"
+  },
+  "weights": {
+    "weight_hist_equation": "log1p(acres)",
+    "weight_recent_uses": "weight_recent"
+  },
+  "kde": {
+    "crs": "EPSG:3310",
+    "cell_m": 1500,
+    "bandwidth_m": 10000,
+    "fast_mode": true,
+    "kernel": "gaussian"
+  },
+  "counts": {
+    "points_filtered": 986,
+    "zones_evaluated": 8,
+    "years_covered_min": 2010,
+    "years_covered_max": 2025
+  },
+  "generated_at": "2025-10-20T20:30:34.933336Z"
+}
