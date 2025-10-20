@@ -1,145 +1,58 @@
 [
   {
     "name": "Angeles National Forest",
-    "center_lat": 34.35,
-    "center_lon": -118.15,
-    "risk_score": 93,
+    "lat": 34.35,
+    "lon": -118.15,
     "area": "Los Angeles County",
-    "key_factors": [
-      "Dense vegetation",
-      "Santa Ana winds",
-      "Limited access"
-    ],
-    "recent_fires": [
-      "Bobcat Fire (2020)",
-      "Creek Fire (2017)"
-    ],
-    "homes_at_risk": 15000,
     "description": "Steep terrain with dense chaparral. High wind exposure."
   },
   {
     "name": "San Bernardino Mountains",
-    "center_lat": 34.2,
-    "center_lon": -117.15,
-    "risk_score": 91,
+    "lat": 34.2,
+    "lon": -117.15,
     "area": "San Bernardino County",
-    "key_factors": [
-      "Drought-stressed forests",
-      "WUI communities",
-      "Mountain topography"
-    ],
-    "recent_fires": [
-      "El Dorado Fire (2020)",
-      "Lake Fire (2015)"
-    ],
-    "homes_at_risk": 12000,
     "description": "Mountain communities surrounded by dry forest and brush."
   },
   {
     "name": "Malibu & Santa Monica Mountains",
-    "center_lat": 34.05,
-    "center_lon": -118.75,
-    "risk_score": 95,
+    "lat": 34.05,
+    "lon": -118.75,
     "area": "Los Angeles/Ventura Counties",
-    "key_factors": [
-      "Coastal chaparral",
-      "Santa Ana winds",
-      "Wealthy communities in WUI"
-    ],
-    "recent_fires": [
-      "Woolsey Fire (2018)",
-      "multiple smaller fires annually"
-    ],
-    "homes_at_risk": 25000,
-    "description": "Iconic coastal mountains with extensive home development in fire-prone areas."
+    "description": "Coastal chaparral with intense WUI exposure."
   },
   {
     "name": "Ventura County Hills",
-    "center_lat": 34.4,
-    "center_lon": -119.1,
-    "risk_score": 88,
+    "lat": 34.4,
+    "lon": -119.1,
     "area": "Ventura County",
-    "key_factors": [
-      "Agricultural areas",
-      "Dry hillsides",
-      "Strong winds"
-    ],
-    "recent_fires": [
-      "Thomas Fire (2017) - largest in CA history at the time"
-    ],
-    "homes_at_risk": 8000,
-    "description": "Agricultural valleys surrounded by dry hillsides."
+    "description": "Dry hillsides flanking agricultural valleys."
   },
   {
     "name": "Riverside/Corona Foothills",
-    "center_lat": 33.88,
-    "center_lon": -117.38,
-    "risk_score": 86,
+    "lat": 33.88,
+    "lon": -117.38,
     "area": "Riverside County",
-    "key_factors": [
-      "Urban-wildland interface",
-      "Fast-growing communities",
-      "Limited escape routes"
-    ],
-    "recent_fires": [
-      "Corona Fire (2021)",
-      "multiple suburban interface fires"
-    ],
-    "homes_at_risk": 18000,
-    "description": "Rapidly expanding suburbs pushing into fire-prone hills."
+    "description": "Rapidly growing WUI at canyon mouths."
   },
   {
     "name": "Orange County Foothills",
-    "center_lat": 33.65,
-    "center_lon": -117.65,
-    "risk_score": 84,
+    "lat": 33.65,
+    "lon": -117.65,
     "area": "Orange County",
-    "key_factors": [
-      "Dense population",
-      "Limited water resources",
-      "Narrow canyons"
-    ],
-    "recent_fires": [
-      "Holy Fire (2018)",
-      "Canyon Fire (2017)"
-    ],
-    "homes_at_risk": 22000,
-    "description": "Affluent foothill communities in narrow canyons with limited evacuation routes."
+    "description": "Narrow canyons and dense WUI."
   },
   {
     "name": "San Diego Backcountry",
-    "center_lat": 33.05,
-    "center_lon": -116.85,
-    "risk_score": 89,
+    "lat": 33.05,
+    "lon": -116.85,
     "area": "San Diego County",
-    "key_factors": [
-      "Remote areas",
-      "Hot, dry climate",
-      "Limited fire resources"
-    ],
-    "recent_fires": [
-      "Valley Fire (2020)",
-      "West Fire (2020)"
-    ],
-    "homes_at_risk": 6000,
-    "description": "Remote mountain communities with extreme fire weather conditions."
+    "description": "Hot, dry backcountry with limited access."
   },
   {
     "name": "Inland Empire - San Jacinto",
-    "center_lat": 33.75,
-    "center_lon": -116.95,
-    "risk_score": 82,
+    "lat": 33.75,
+    "lon": -116.95,
     "area": "Riverside County",
-    "key_factors": [
-      "Mountain communities",
-      "Aging infrastructure",
-      "Limited water"
-    ],
-    "recent_fires": [
-      "Apple Fire (2020)",
-      "Cranston Fire (2018)"
-    ],
-    "homes_at_risk": 9000,
-    "description": "Mountain and desert interface communities with limited resources."
+    "description": "Mountain/desert interface communities."
   }
 ]
