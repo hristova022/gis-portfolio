@@ -37,10 +37,10 @@
     "land_clip": true
   },
   "counts": {
-    "points_filtered": 986,
+    "points_filtered": 981,
     "zones_evaluated": 8,
     "years_covered_min": 2010,
     "years_covered_max": 2025
   },
-  "generated_at": "2025-10-20T20:42:10.300580Z"
+  "generated_at": "2025-10-20T20:58:27.922592Z"
 }
