@@ -3,3 +3,5 @@ pandas
 pydeck
 plotly
 requests
+wordcloud
+matplotlib

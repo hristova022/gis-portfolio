@@ -6,7 +6,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Long Beach Sentiment Pulse", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Long Beach Community Voice", page_icon="🔍", layout="wide")
 
 # Custom CSS
 st.markdown("""
@@ -35,7 +35,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown('<div class="big-title">🔍 Long Beach Sentiment Pulse</div>', unsafe_allow_html=True)
+st.markdown('<div class="big-title">🔍 Long Beach Community Voice</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Community Opinion Dashboard - Real-time sentiment analysis of Long Beach topics</div>', unsafe_allow_html=True)
 
 # Load data
