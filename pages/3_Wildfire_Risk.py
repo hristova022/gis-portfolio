@@ -5,10 +5,10 @@ from pydeck.types import String as PDKString
 import plotly.express as px
 import requests, json, datetime
 
-st.set_page_config(page_title="SoCal Wildfire Risk", page_icon="🔥", layout="wide")
+st.set_page_config(page_title="SoCal Wildfire Activity — Past & Recent", page_icon="🔥", layout="wide")
 
-st.title("🔥 Southern California Wildfire Risk")
-st.subheader("Clear, data-driven mapping for anyone — using CAL FIRE/FRAP fire history")
+st.title("🔥 Southern California Wildfire Activity (Past & Recent)")
+st.subheader("CAL FIRE/FRAP historical perimeters weighted by size and recency — **not a prediction**.")
 
 @st.cache_data
 def load_data():
@@ -49,7 +49,7 @@ with st.container(border=True):
 """)
 
 # ---- Controls (friendly labels) ----
-st.markdown("### 🗺️ Interactive wildfire heat surface")
+st.markdown("### 🗺️ Heat & density of past/recent fire activity")
 label_to_field = {
     "Recent Activity (recency × size)": "weight_recent",
     "Long-Term Activity (size only)": "weight_hist",
@@ -130,7 +130,7 @@ zr = summary[summary['zone_name']==selected_zone].iloc[0]
 detail = [d for d in details if d['name']==selected_zone][0]
 
 c1, c2, c3 = st.columns(3)
-c1.metric("Composite risk (0–100)", f"{int(zr['risk_score'])}")
+c1.metric("Composite activity (0–100)", f"{int(zr['risk_score'])}")
 c2.metric("Fires since 2000 (25 km)", f"{int(zr['fires_since_2000'])}")
 c3.metric("Acres burned since 2000", f"{int(zr['burned_acres_since_2000']):,}")
 
@@ -146,7 +146,7 @@ fig = px.bar(
     orientation='h',
     color='risk_score',
     color_continuous_scale='Viridis' if 'Viridis' in palette else 'YlOrRd',
-    labels={'zone_name':'Zone','risk_score':'Composite risk (0–100)'}
+    labels={'zone_name':'Zone','risk_score':'Composite activity (0–100)'}
 )
 fig.update_layout(showlegend=False, height=420, xaxis_range=[0,100])
 st.plotly_chart(fig, use_container_width=True)
@@ -190,4 +190,4 @@ with st.expander("📥 Data source & query", expanded=False):
 - Methodology JSON: [{BASE_URL}wildfire_methodology.json]({BASE_URL}wildfire_methodology.json)
 """)
 
-st.caption("This summarizes where wildfire activity has clustered in Southern California using public data. Heat map = visual density (zoom-relative). KDE = analytical surface in meters (fixed distance), land-clipped. Not a forecast or official hazard designation.")
+st.caption("This summarizes historical and recent wildfire activity in Southern California. Not a prediction or official hazard designation.")
