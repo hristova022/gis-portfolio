@@ -88,135 +88,95 @@ st.markdown("""
 
 # Header
 st.markdown('<div class="big-title">💬 Long Beach Community Pulse</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Multi-platform opinion tracking powered by AI sentiment analysis</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Tracking online conversations about Long Beach topics</div>', unsafe_allow_html=True)
 
 # Why This Matters Section
 with st.expander("ℹ️ Why This Dashboard Matters", expanded=False):
     st.markdown("""
     <div class="info-box">
-    <h3>📊 Understanding Community Opinion</h3>
-    <p>This dashboard analyzes thousands of real conversations from Long Beach residents across multiple platforms to reveal:</p>
+    <h3>📊 Why Track Online Conversations?</h3>
+    <p>Social media gives us a window into what residents are talking about—not scientific data, but real discussions happening in the community.</p>
+    
+    <p><strong>What this dashboard helps you see:</strong></p>
     <ul>
-        <li><strong>What issues matter most</strong> to the community right now</li>
-        <li><strong>How residents feel</strong> about key topics like housing, safety, and development</li>
-        <li><strong>Opinion trends over time</strong> - are concerns improving or worsening?</li>
-        <li><strong>Unfiltered community voice</strong> - what people actually say, not just official reports</li>
-        <li><strong>Cross-platform insights</strong> - comparing discussions on Reddit vs Twitter</li>
+        <li>Which topics generate the most discussion</li>
+        <li>General tone of conversations (positive, negative, neutral)</li>
+        <li>How discussions evolve over time</li>
+        <li>What words and themes come up frequently</li>
+        <li>Differences between Reddit and Twitter conversations</li>
     </ul>
-    <p><strong>💡 Use cases:</strong></p>
+    
+    <p><strong>Who might find this useful:</strong></p>
     <ul>
-        <li><strong>Policymakers:</strong> Understand constituent concerns in real-time</li>
-        <li><strong>Community organizers:</strong> Identify emerging issues and mobilize action</li>
-        <li><strong>Journalists:</strong> Track public opinion trends for stories</li>
-        <li><strong>Residents:</strong> See what your neighbors are talking about</li>
-        <li><strong>Researchers:</strong> Study community dynamics and social trends</li>
-        <li><strong>Businesses:</strong> Understand local sentiment for planning</li>
+        <li><strong>Community members:</strong> See what neighbors are discussing</li>
+        <li><strong>Journalists:</strong> Identify trending local topics</li>
+        <li><strong>Community organizers:</strong> Spot emerging concerns</li>
+        <li><strong>Researchers:</strong> Study how online discussions work</li>
+        <li><strong>City staff:</strong> Monitor community conversations (alongside official feedback channels)</li>
     </ul>
+    
+    <p><em>Remember: This tracks online conversations, not comprehensive public opinion. Use it as one data point among many.</em></p>
     </div>
     """, unsafe_allow_html=True)
 
 # Methodology Section
-with st.expander("🔬 Methodology & Data Sources", expanded=False):
+with st.expander("🔬 About This Dashboard", expanded=False):
     st.markdown("""
     <div class="methodology-box">
-    <h3>How We Track Community Opinion</h3>
+    <h3>What This Dashboard Shows</h3>
+    <p>This tool tracks what Long Beach residents are talking about online and provides a general sense of community opinion on key topics. Think of it as taking the pulse of local conversations.</p>
     
-    <h4>📊 Data Collection Sources</h4>
+    <h4>📊 Where the Data Comes From</h4>
     <ul>
-        <li><strong>Reddit r/longbeach:</strong> 10,000+ member community, long-form discussions
-            <ul>
-                <li>Best for: In-depth opinions, local knowledge, community debates</li>
-                <li>Collection method: PRAW (Python Reddit API Wrapper)</li>
-                <li>Search queries: Topic-specific keywords across all posts</li>
-            </ul>
-        </li>
-        <li><strong>Twitter/X:</strong> Real-time public conversations and breaking news
-            <ul>
-                <li>Best for: Immediate reactions, trending topics, breaking news</li>
-                <li>Collection method: Twitter API v2 (Basic tier)</li>
-                <li>Search query: "Long Beach" + topic keywords (housing, crime, etc.)</li>
-            </ul>
-        </li>
-        <li><strong>Time Period:</strong> Rolling 6-month window, updated weekly</li>
-        <li><strong>Topics Tracked:</strong> Homelessness, crime/safety, development, parking, housing, traffic, beaches, downtown, neighborhoods</li>
-        <li><strong>Volume:</strong> Hundreds to thousands of posts analyzed per week</li>
+        <li><strong>Reddit r/longbeach:</strong> Community discussions from 10,000+ members</li>
+        <li><strong>Twitter/X:</strong> Public posts mentioning Long Beach topics</li>
+        <li><strong>Timeframe:</strong> Last 6 months of posts, updated weekly</li>
+        <li><strong>Topics tracked:</strong> Housing, homelessness, crime, parking, traffic, development, beaches</li>
     </ul>
     
-    <h4>🤖 AI Sentiment Analysis with TextBlob</h4>
+    <h4>🤖 How Sentiment Analysis Works</h4>
+    <p>We use TextBlob, a basic sentiment analysis tool that gives each post a score from -1 (negative) to +1 (positive). It looks at word choice to estimate the overall tone.</p>
+    
+    <p><strong>Examples:</strong></p>
     <ul>
-        <li><strong>NLP Engine:</strong> TextBlob Natural Language Processing library
-            <ul>
-                <li>Industry-standard sentiment analysis tool</li>
-                <li>Pre-trained on millions of text samples</li>
-                <li>Validates against lexicon-based sentiment dictionaries</li>
-            </ul>
-        </li>
-        <li><strong>How TextBlob Works:</strong>
-            <ul>
-                <li>Breaks text into words and phrases (tokenization)</li>
-                <li>Identifies parts of speech (nouns, adjectives, verbs)</li>
-                <li>Assigns sentiment scores to each word based on trained models</li>
-                <li>Combines word-level scores into overall sentiment</li>
-            </ul>
-        </li>
-        <li><strong>Scoring System:</strong> Each post receives two scores:
-            <ul>
-                <li><em>Polarity:</em> -1.0 (very negative) to +1.0 (very positive)
-                    <ul>
-                        <li>-1.0 to -0.1 = Negative sentiment</li>
-                        <li>-0.1 to +0.1 = Neutral sentiment</li>
-                        <li>+0.1 to +1.0 = Positive sentiment</li>
-                    </ul>
-                </li>
-                <li><em>Subjectivity:</em> 0 (purely factual) to 1 (highly opinionated)
-                    <ul>
-                        <li>Distinguishes facts from opinions</li>
-                        <li>Higher subjectivity = more personal feelings</li>
-                    </ul>
-                </li>
-            </ul>
-        </li>
-        <li><strong>Example Analysis:</strong>
-            <ul>
-                <li>"Love the new bike lanes!" → Polarity: +0.5 (Positive)</li>
-                <li>"Traffic is terrible today" → Polarity: -0.7 (Negative)</li>
-                <li>"City council meets Monday" → Polarity: 0.0 (Neutral)</li>
-            </ul>
-        </li>
+        <li>"Love the new bike lanes!" → +0.5 (Positive)</li>
+        <li>"Traffic is terrible" → -0.7 (Negative)</li>
+        <li>"City council meets Monday" → 0.0 (Neutral)</li>
     </ul>
     
-    <h4>📈 How to Read the Visualizations</h4>
+    <p><strong>Classification:</strong> Posts scoring below -0.1 are "Negative," above +0.1 are "Positive," and in between are "Neutral."</p>
+    
+    <h4>⚠️ Important Limitations</h4>
+    <p><strong>This is NOT perfect science.</strong> Here's what to keep in mind:</p>
     <ul>
-        <li><strong>Pie Chart:</strong> Overall breakdown of positive/neutral/negative opinions
-            <ul><li>Green = Positive, Yellow = Neutral, Red = Negative</li></ul>
-        </li>
-        <li><strong>Bar Chart:</strong> Compare sentiment across topics
-            <ul><li>Taller bars = more discussion on that topic</li></ul>
-        </li>
-        <li><strong>Time Series:</strong> How sentiment changes over weeks
-            <ul>
-                <li>Line above 0 = overall positive sentiment</li>
-                <li>Upward slope = sentiment improving</li>
-            </ul>
-        </li>
-        <li><strong>Word Clouds:</strong> Most frequently used words
-            <ul><li>Bigger words = used more often in discussions</li></ul>
-        </li>
+        <li><strong>AI limitations:</strong> The tool misses sarcasm, context, and nuance. "Great, more traffic" reads as positive when it's clearly negative.</li>
+        <li><strong>Sample bias:</strong> Reddit and Twitter users are younger and more tech-savvy than the general Long Beach population.</li>
+        <li><strong>Not representative:</strong> This shows what people say online, not scientific polling of all residents.</li>
+        <li><strong>English only:</strong> Misses Spanish-language discussions in our diverse community.</li>
+        <li><strong>Missing platforms:</strong> Can't access Nextdoor (no public data), Facebook groups (privacy restrictions), or many local forums.</li>
     </ul>
     
-    <h4>⚠️ Known Limitations</h4>
+    <h4>💡 Best Use of This Dashboard</h4>
+    <p>Use this to:</p>
     <ul>
-        <li><strong>Demographic skew:</strong> Reddit and Twitter users tend younger and more tech-savvy</li>
-        <li><strong>Self-selection bias:</strong> People with strong opinions post more frequently</li>
-        <li><strong>Sarcasm detection:</strong> AI can struggle with sarcasm and irony</li>
-        <li><strong>Platform limitations:</strong> Nextdoor has no public API (cannot access)</li>
-        <li><strong>English-only:</strong> May miss Spanish-language discussions</li>
+        <li>✅ Spot trending topics and general mood shifts</li>
+        <li>✅ See which issues generate the most discussion</li>
+        <li>✅ Identify emerging community concerns</li>
+        <li>✅ Track how conversations evolve over time</li>
     </ul>
     
-    <h4>🔄 Data Freshness</h4>
-    <p>Last updated: <strong>{}</strong> | Next update: Weekly (every Monday)</p>
+    <p><strong>Don't use this to:</strong></p>
+    <ul>
+        <li>❌ Make major policy decisions (it's not scientific polling)</li>
+        <li>❌ Claim exact percentages represent all residents</li>
+        <li>❌ Assume the AI perfectly understands every post</li>
+    </ul>
+    
+    <p><em>Think of this as a conversation tracker, not a precise measurement tool.</em></p>
+    
+    <p><strong>Last updated:</strong> {} | <strong>Updates:</strong> Weekly</p>
     </div>
-    """.format(datetime.now().strftime("%B %d, %Y at %I:%M %p")), unsafe_allow_html=True)
+    """.format(datetime.now().strftime("%B %d, %Y")), unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -508,14 +468,21 @@ if data_df is not None:
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #9CA3AF;'>
-        <p><strong>Data Sources:</strong> Reddit r/longbeach, Twitter/X | 
-        <strong>Analysis:</strong> TextBlob NLP | 
-        <strong>Last Updated:</strong> {}</p>
-        <p><em>Platform demographics may not represent all Long Beach residents. See methodology for details.</em></p>
-        <p>Built with Streamlit, TextBlob, PRAW, Tweepy, and ❤️ for Long Beach</p>
+        <p><strong>Data:</strong> Reddit r/longbeach, Twitter/X | 
+        <strong>Analysis:</strong> TextBlob sentiment scoring | 
+        <strong>Updated:</strong> {}</p>
+        <p><em>This tracks online discussions, not comprehensive public opinion. See "About This Dashboard" for limitations.</em></p>
+        <p>Built with Streamlit and ❤️ for Long Beach</p>
     </div>
     """.format(datetime.now().strftime('%B %d, %Y')), unsafe_allow_html=True)
 
 else:
     st.error("❌ Data file not found")
-    st.info("Please run the data collection script to generate community_pulse_data.csv")
+    st.info("""
+    **To generate data:**
+    
+    Run the data collection script to gather posts from Reddit and Twitter about Long Beach topics.
+    The script analyzes sentiment and creates the community_pulse_data.csv file.
+    
+    See the repository for the data collection notebook.
+    """)
