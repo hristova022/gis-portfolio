@@ -6,17 +6,12 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-st.set_page_config(page_title="Long Beach Community Pulse", page_icon="💬", layout="wide")
+st.set_page_config(page_title="Community Pulse", page_icon="💬", layout="wide")
 
 # Enhanced Dark Mode CSS
 st.markdown("""
 <style>
-    .main-title {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1E40AF;
-        margin-bottom: 1rem;
-    }
+    .main-title { font-size: 2.5rem; font-weight: bold; color: #1E40AF; }
 </style>
 """, unsafe_allow_html=True)
 
