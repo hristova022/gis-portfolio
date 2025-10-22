@@ -64,7 +64,6 @@ col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True):
         st.markdown("### 🏠 Homelessness Resources LA County")
-- **💬 Community Voice**: Track online conversations about Long Beach topics through sentiment analysis of Reddit and Twitter discussions
         st.markdown("""
         **Are we keeping pace with the crisis?**
         
