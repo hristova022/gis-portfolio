@@ -7,6 +7,10 @@ st.set_page_config(
 )
 
 st.title("🗺️ GIS & Climate Solutions Portfolio")
+
+# New Dashboard: Community Voice
+st.info("💬 **NEW:** Check out the Community Pulse dashboard in the sidebar - tracking Long Beach online conversations!")
+
 st.subheader("Luba Hristova | GIS Analyst | Spatial Data Science")
 
 st.markdown("""
