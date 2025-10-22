@@ -50,7 +50,10 @@ def load_data():
     try:
         df = pd.read_csv('community_pulse_data.csv')
         st.sidebar.success(f"✅ Loaded community_pulse_data.csv ({len(df)} rows)")
-        df['created_utc'] = pd.to_datetime(df['created_utc'])
+        
+        # Fix datetime parsing with timezone handling
+        df['created_utc'] = pd.to_datetime(df['created_utc'], format='ISO8601', utc=True)
+        
         return df
     except FileNotFoundError:
         st.sidebar.error("❌ community_pulse_data.csv not found")
@@ -59,7 +62,7 @@ def load_data():
         try:
             df = pd.read_csv('reddit_sentiment_data.csv')
             st.sidebar.warning("⚠️ Using reddit_sentiment_data.csv instead")
-            df['created_utc'] = pd.to_datetime(df['created_utc'])
+            df['created_utc'] = pd.to_datetime(df['created_utc'], format='ISO8601', utc=True)
             return df
         except:
             st.sidebar.error("❌ reddit_sentiment_data.csv also not found")
