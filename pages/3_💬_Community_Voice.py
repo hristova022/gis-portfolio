@@ -11,172 +11,18 @@ st.set_page_config(page_title="Long Beach Community Pulse", page_icon="💬", la
 # Enhanced Dark Mode CSS
 st.markdown("""
 <style>
-    .big-title {
-        font-size: 3rem;
+    .main-title {
+        font-size: 2.5rem;
         font-weight: bold;
-        background: linear-gradient(135deg, #818CF8 0%, #A78BFA 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    .subtitle {
-        font-size: 1.3rem;
-        color: #D1D5DB;
-        text-align: center;
-        margin-bottom: 2rem;
-        font-weight: 400;
-    }
-    .info-box {
-        background: rgba(99, 102, 241, 0.1);
-        border-left: 4px solid #818CF8;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1.5rem 0;
-        color: #E5E7EB;
-    }
-    .info-box h3, .info-box h4 { 
-        color: #A78BFA; 
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    .info-box p, .info-box li { 
-        color: #D1D5DB; 
-        line-height: 1.6; 
-    }
-    .info-box strong { color: #F3F4F6; }
-    .info-box em { color: #C4B5FD; }
-    
-    .methodology-box {
-        background: rgba(245, 158, 11, 0.1);
-        border-left: 4px solid #F59E0B;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1.5rem 0;
-        color: #E5E7EB;
-    }
-    .methodology-box h3, .methodology-box h4 { 
-        color: #FBBF24;
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    .methodology-box p, .methodology-box li { 
-        color: #D1D5DB; 
-        line-height: 1.6;
-    }
-    .methodology-box strong { color: #F3F4F6; }
-    .methodology-box em { color: #FCD34D; }
-    
-    .highlight-box {
-        background: rgba(139, 92, 246, 0.1);
-        border: 2px solid #8B5CF6;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-    }
-    
-    .insight-box {
-        background: rgba(16, 185, 129, 0.1);
-        border-left: 4px solid #10B981;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        color: #D1FAE5;
+        color: #1E40AF;
+        margin-bottom: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-st.markdown('<div class="big-title">💬 Long Beach Community Pulse</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Tracking online conversations about Long Beach topics</div>', unsafe_allow_html=True)
+st.title("💬 Long Beach Community Pulse")
+st.markdown("Tracking online conversations about Long Beach topics")
 
-# Why This Matters Section
-with st.expander("ℹ️ Why This Dashboard Matters", expanded=False):
-    st.markdown("""
-    <div class="info-box">
-    <h3>📊 Why Track Online Conversations?</h3>
-    <p>Social media gives us a window into what residents are talking about—not scientific data, but real discussions happening in the community.</p>
-    
-    <p><strong>What this dashboard helps you see:</strong></p>
-    <ul>
-        <li>Which topics generate the most discussion</li>
-        <li>General tone of conversations (positive, negative, neutral)</li>
-        <li>How discussions evolve over time</li>
-        <li>What words and themes come up frequently</li>
-        <li>Differences between Reddit and Twitter conversations</li>
-    </ul>
-    
-    <p><strong>Who might find this useful:</strong></p>
-    <ul>
-        <li><strong>Community members:</strong> See what neighbors are discussing</li>
-        <li><strong>Journalists:</strong> Identify trending local topics</li>
-        <li><strong>Community organizers:</strong> Spot emerging concerns</li>
-        <li><strong>Researchers:</strong> Study how online discussions work</li>
-        <li><strong>City staff:</strong> Monitor community conversations (alongside official feedback channels)</li>
-    </ul>
-    
-    <p><em>Remember: This tracks online conversations, not comprehensive public opinion. Use it as one data point among many.</em></p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Methodology Section
-with st.expander("🔬 About This Dashboard", expanded=False):
-    st.markdown("""
-    <div class="methodology-box">
-    <h3>What This Dashboard Shows</h3>
-    <p>This tool tracks what Long Beach residents are talking about online and provides a general sense of community opinion on key topics. Think of it as taking the pulse of local conversations.</p>
-    
-    <h4>📊 Where the Data Comes From</h4>
-    <ul>
-        <li><strong>Reddit r/longbeach:</strong> Community discussions from 10,000+ members</li>
-        <li><strong>Twitter/X:</strong> Public posts mentioning Long Beach topics</li>
-        <li><strong>Timeframe:</strong> Last 6 months of posts, updated weekly</li>
-        <li><strong>Topics tracked:</strong> Housing, homelessness, crime, parking, traffic, development, beaches</li>
-    </ul>
-    
-    <h4>🤖 How Sentiment Analysis Works</h4>
-    <p>We use TextBlob, a basic sentiment analysis tool that gives each post a score from -1 (negative) to +1 (positive). It looks at word choice to estimate the overall tone.</p>
-    
-    <p><strong>Examples:</strong></p>
-    <ul>
-        <li>"Love the new bike lanes!" → +0.5 (Positive)</li>
-        <li>"Traffic is terrible" → -0.7 (Negative)</li>
-        <li>"City council meets Monday" → 0.0 (Neutral)</li>
-    </ul>
-    
-    <p><strong>Classification:</strong> Posts scoring below -0.1 are "Negative," above +0.1 are "Positive," and in between are "Neutral."</p>
-    
-    <h4>⚠️ Important Limitations</h4>
-    <p><strong>This is NOT perfect science.</strong> Here's what to keep in mind:</p>
-    <ul>
-        <li><strong>AI limitations:</strong> The tool misses sarcasm, context, and nuance. "Great, more traffic" reads as positive when it's clearly negative.</li>
-        <li><strong>Sample bias:</strong> Reddit and Twitter users are younger and more tech-savvy than the general Long Beach population.</li>
-        <li><strong>Not representative:</strong> This shows what people say online, not scientific polling of all residents.</li>
-        <li><strong>English only:</strong> Misses Spanish-language discussions in our diverse community.</li>
-        <li><strong>Missing platforms:</strong> Can't access Nextdoor (no public data), Facebook groups (privacy restrictions), or many local forums.</li>
-    </ul>
-    
-    <h4>💡 Best Use of This Dashboard</h4>
-    <p>Use this to:</p>
-    <ul>
-        <li>✅ Spot trending topics and general mood shifts</li>
-        <li>✅ See which issues generate the most discussion</li>
-        <li>✅ Identify emerging community concerns</li>
-        <li>✅ Track how conversations evolve over time</li>
-    </ul>
-    
-    <p><strong>Don't use this to:</strong></p>
-    <ul>
-        <li>❌ Make major policy decisions (it's not scientific polling)</li>
-        <li>❌ Claim exact percentages represent all residents</li>
-        <li>❌ Assume the AI perfectly understands every post</li>
-    </ul>
-    
-    <p><em>Think of this as a conversation tracker, not a precise measurement tool.</em></p>
-    
-    <p><strong>Last updated:</strong> {} | <strong>Updates:</strong> Weekly</p>
-    </div>
-    """.format(datetime.now().strftime("%B %d, %Y")), unsafe_allow_html=True)
 
 st.markdown("---")
 
