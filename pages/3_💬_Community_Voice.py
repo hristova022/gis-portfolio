@@ -89,6 +89,7 @@ if data_df is not None:
             ]
     
     # Tabs
+    # Tabs
     tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Trends", "📝 Top Posts & Data"])
     
     with tab1:
@@ -123,42 +124,41 @@ if data_df is not None:
             fig.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
         
-        # Key insights
-        st.subheader("💡 Key Insights")
-        
-        most_discussed = filtered_df['topic'].value_counts().index[0] if len(filtered_df) > 0 else "N/A"
-        most_discussed_count = filtered_df['topic'].value_counts().iloc[0] if len(filtered_df) > 0 else 0
-        
-        topic_sentiment_avg = filtered_df.groupby('topic')['polarity'].mean().sort_values()
-        most_positive = topic_sentiment_avg.index[-1] if len(topic_sentiment_avg) > 0 else "N/A"
-        most_negative = topic_sentiment_avg.index[0] if len(topic_sentiment_avg) > 0 else "N/A"
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"""
-            <div class="insight-box">
-            <strong>🔥 Hottest Topic:</strong> {most_discussed} ({most_discussed_count} posts)<br>
-            <strong>😊 Most Positive:</strong> {most_positive}<br>
-            <strong>😟 Most Negative:</strong> {most_negative}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            positive_pct = (filtered_df['sentiment'] == 'Positive').sum() / len(filtered_df) * 100
-            negative_pct = (filtered_df['sentiment'] == 'Negative').sum() / len(filtered_df) * 100
+        # Platform comparison if both sources exist
+        sources = data_df['source'].unique() if 'source' in data_df.columns else ['Reddit']
+        if len(sources) > 1:
+            st.subheader("Platform Comparison")
+            st.caption("How sentiment differs between platforms")
             
-            st.markdown(f"""
-            <div class="insight-box">
-            <strong>📊 Sentiment Breakdown:</strong><br>
-            Positive: {positive_pct:.1f}%<br>
-            Negative: {negative_pct:.1f}%<br>
-            Neutral: {100-positive_pct-negative_pct:.1f}%
-            </div>
-            """, unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                platform_sentiment = filtered_df.groupby(['source', 'sentiment']).size().reset_index(name='count')
+                fig = px.bar(
+                    platform_sentiment,
+                    x='source',
+                    y='count',
+                    color='sentiment',
+                    color_discrete_map={'Positive': '#10B981', 'Neutral': '#F59E0B', 'Negative': '#EF4444'},
+                    barmode='group'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                platform_avg = filtered_df.groupby('source')['polarity'].mean().reset_index()
+                fig = px.bar(
+                    platform_avg,
+                    x='source',
+                    y='polarity',
+                    color='polarity',
+                    color_continuous_scale=['red', 'yellow', 'green']
+                )
+                fig.add_hline(y=0, line_dash="dash", line_color="white")
+                st.plotly_chart(fig, use_container_width=True)
     
     with tab2:
         st.subheader("Opinion Trends Over Time")
-        st.caption("Weekly average sentiment - spot trends and patterns")
+        st.caption("Weekly average sentiment")
         
         time_series = filtered_df.set_index('created_utc').resample('W')['polarity'].mean().reset_index()
         
@@ -169,15 +169,13 @@ if data_df is not None:
             mode='lines+markers',
             name='Opinion Score',
             line=dict(color='#818CF8', width=3),
-            fill='tozeroy',
-            fillcolor='rgba(129, 140, 248, 0.2)'
+            fill='tozeroy'
         ))
-        fig.add_hline(y=0, line_dash="dash", line_color="gray", annotation_text="Neutral")
+        fig.add_hline(y=0, line_dash="dash", line_color="gray")
         fig.update_layout(
             xaxis_title="Week",
-            yaxis_title="Average Sentiment Score",
-            hovermode='x unified',
-            yaxis_range=[-1, 1]
+            yaxis_title="Average Sentiment",
+            hovermode='x unified'
         )
         st.plotly_chart(fig, use_container_width=True)
         
@@ -185,14 +183,12 @@ if data_df is not None:
         
         with col1:
             st.subheader("Discussion Volume")
-            st.caption("Posts per week")
             volume = filtered_df.set_index('created_utc').resample('W').size().reset_index(name='count')
             fig = px.bar(volume, x='created_utc', y='count', color_discrete_sequence=['#A78BFA'])
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.subheader("Sentiment Distribution Over Time")
-            st.caption("How opinions evolve")
+            st.subheader("Sentiment Over Time")
             weekly = filtered_df.copy()
             weekly['week'] = weekly['created_utc'].dt.to_period('W').astype(str)
             weekly_counts = weekly.groupby(['week', 'sentiment']).size().reset_index(name='count')
@@ -208,85 +204,50 @@ if data_df is not None:
             st.plotly_chart(fig, use_container_width=True)
     
     with tab3:
-    with tab4:
         st.subheader("📌 Top Engaged Posts")
         st.caption("Most liked and commented discussions")
         
-        # Calculate engagement score
         filtered_df['engagement'] = filtered_df['score'] + (filtered_df['num_comments'] * 2)
         top_posts = filtered_df.nlargest(15, 'engagement')
         
-        # Sentiment filter
         sentiment_filter = st.radio("Filter:", ["All", "Positive", "Neutral", "Negative"], horizontal=True)
         
         if sentiment_filter != "All":
             top_posts = top_posts[top_posts['sentiment'] == sentiment_filter]
         
-        # Display posts
         for idx, post in top_posts.iterrows():
             emoji = {'Positive': '🟢', 'Neutral': '🟡', 'Negative': '🔴'}[post['sentiment']]
             
-            with st.container():
-                st.markdown(f"""
-                <div class="highlight-box">
-                <strong>{emoji} {post['title'][:120]}...</strong><br>
-                <small>
-                📅 {post['created_utc'].strftime('%Y-%m-%d')} | 
-                📊 {post['source']} | 
-                🏷️ {post['topic']} | 
-                ⭐ {post['score']} points | 
-                💬 {post['num_comments']} comments | 
-                📈 Sentiment: {post['polarity']:.2f}
-                </small><br>
-                <a href="{post['url']}" target="_blank" style="color: #818CF8;">View Discussion →</a>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown(f"""
+            **{emoji} {post['title'][:120]}...**  
+            📅 {post['created_utc'].strftime('%Y-%m-%d')} | 
+            📊 {post['source']} | 
+            🏷️ {post['topic']} | 
+            ⭐ {post['score']} | 
+            💬 {post['num_comments']} comments
+            """)
+            st.markdown(f"[View Discussion →]({post['url']})")
+            st.markdown("---")
         
-        st.markdown("---")
-        
-        # Raw Data Section
-        st.subheader("📊 Download Raw Data")
+        st.markdown("### 📊 Download Raw Data")
         
         col1, col2 = st.columns([3, 1])
-        
         with col1:
-            st.write(f"**Dataset Info:** {len(filtered_df):,} posts | "
-                    f"{len(filtered_df['topic'].unique())} topics | "
-                    f"Date range: {filtered_df['created_utc'].min().strftime('%Y-%m-%d')} to "
-                    f"{filtered_df['created_utc'].max().strftime('%Y-%m-%d')}")
-        
+            st.write(f"**Dataset:** {len(filtered_df):,} posts")
         with col2:
             csv = filtered_df.to_csv(index=False)
             st.download_button(
-                "📥 Download CSV",
+                "📥 CSV",
                 csv,
                 f"community_pulse_{datetime.now().strftime('%Y%m%d')}.csv",
-                "text/csv",
-                use_container_width=True
-            )
-        
-        # Show sample with selected columns
-        with st.expander("👁️ Preview Data (50 most recent posts)"):
-            display_cols = ['created_utc', 'source', 'topic', 'sentiment', 'polarity', 'title', 'score', 'num_comments']
-            available_cols = [col for col in display_cols if col in filtered_df.columns]
-            
-            st.dataframe(
-                filtered_df[available_cols].sort_values('created_utc', ascending=False).head(50),
-                use_container_width=True,
-                height=400
+                "text/csv"
             )
     
-    # Footer
     st.markdown("---")
-    st.markdown("""
-    <div style='text-align: center; color: #9CA3AF;'>
-        <p><strong>Data:</strong> Reddit r/longbeach, Twitter/X | 
-        <strong>Analysis:</strong> TextBlob sentiment scoring | 
-        <strong>Updated:</strong> {}</p>
-        <p><em>This tracks online discussions, not comprehensive public opinion. See "About This Dashboard" for limitations.</em></p>
-        <p>Built with Streamlit and ❤️ for Long Beach</p>
-    </div>
-    """.format(datetime.now().strftime('%B %d, %Y')), unsafe_allow_html=True)
+    st.markdown("**Data:** Reddit & Twitter | **Analysis:** Sentiment scoring | Built with ❤️ for Long Beach")
+
+else:
+    st.error("❌ Data file not found")
 
 else:
     st.error("❌ Data file not found")
