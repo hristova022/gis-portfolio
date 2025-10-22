@@ -6,7 +6,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Long Beach Community Voice", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Long Beach Community Voice", page_icon="💬", layout="wide")
 
 # Custom CSS
 st.markdown("""
@@ -14,29 +14,108 @@ st.markdown("""
     .big-title {
         font-size: 3rem;
         font-weight: bold;
-        color: #1E3A8A;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .subtitle {
-        font-size: 1.2rem;
-        color: #64748B;
+        font-size: 1.3rem;
+        color: #475569;
         text-align: center;
         margin-bottom: 2rem;
+        font-weight: 500;
     }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .info-box {
+        background: #F8FAFC;
+        border-left: 4px solid #667eea;
         padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+    }
+    .methodology-box {
+        background: #FFF7ED;
+        border-left: 4px solid #F59E0B;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown('<div class="big-title">🔍 Long Beach Community Voice</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Community Opinion Dashboard - Real-time sentiment analysis of Long Beach topics</div>', unsafe_allow_html=True)
+st.markdown('<div class="big-title">💬 Long Beach Community Voice</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Real-time sentiment analysis of community discussions about Long Beach</div>', unsafe_allow_html=True)
+
+# Why This Matters Section
+with st.expander("ℹ️ Why This Dashboard Matters", expanded=False):
+    st.markdown("""
+    <div class="info-box">
+    <h3>Understanding Community Sentiment</h3>
+    <p>This dashboard analyzes thousands of real conversations from Long Beach residents to reveal:</p>
+    <ul>
+        <li><strong>What issues matter most</strong> to the community right now</li>
+        <li><strong>How residents feel</strong> about key topics like housing, safety, and development</li>
+        <li><strong>Sentiment trends over time</strong> - are concerns improving or worsening?</li>
+        <li><strong>Unfiltered community voice</strong> - what people actually say, not just official reports</li>
+    </ul>
+    <p><strong>Use cases:</strong></p>
+    <ul>
+        <li>📊 Policymakers: Understand constituent concerns in real-time</li>
+        <li>🏘️ Community organizers: Identify emerging issues</li>
+        <li>📰 Journalists: Track public opinion trends</li>
+        <li>👥 Residents: See what your neighbors are talking about</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Methodology Section
+with st.expander("🔬 Methodology & Data Sources", expanded=False):
+    st.markdown("""
+    <div class="methodology-box">
+    <h3>How We Analyze Community Sentiment</h3>
+    
+    <h4>📊 Data Collection</h4>
+    <ul>
+        <li><strong>Source:</strong> Reddit's r/longbeach community (10,000+ members)</li>
+        <li><strong>Time Period:</strong> Rolling 6-month window, updated regularly</li>
+        <li><strong>Topics Tracked:</strong> Homelessness, crime/safety, development, parking, housing, traffic</li>
+        <li><strong>Volume:</strong> Hundreds of posts and thousands of comments analyzed</li>
+    </ul>
+    
+    <h4>🤖 Sentiment Analysis</h4>
+    <ul>
+        <li><strong>Technology:</strong> TextBlob Natural Language Processing (NLP) library</li>
+        <li><strong>Method:</strong> Each post is scored for:
+            <ul>
+                <li><em>Polarity:</em> -1 (very negative) to +1 (very positive)</li>
+                <li><em>Subjectivity:</em> 0 (objective facts) to 1 (subjective opinions)</li>
+            </ul>
+        </li>
+        <li><strong>Classification:</strong> Posts are categorized as Positive, Neutral, or Negative based on polarity scores</li>
+    </ul>
+    
+    <h4>⚠️ Limitations</h4>
+    <ul>
+        <li><strong>Reddit demographic:</strong> May not represent all Long Beach residents (tends younger, more tech-savvy)</li>
+        <li><strong>Self-selection bias:</strong> People with strong opinions are more likely to post</li>
+        <li><strong>Sarcasm detection:</strong> NLP can struggle with sarcasm and nuanced language</li>
+        <li><strong>Single platform:</strong> Currently only analyzes Reddit. Future versions may include:
+            <ul>
+                <li>Nextdoor (no public API currently available)</li>
+                <li>Twitter/X mentions of Long Beach</li>
+                <li>Local news comment sections</li>
+            </ul>
+        </li>
+    </ul>
+    
+    <h4>🔄 Updates</h4>
+    <p>Data is collected and analyzed periodically. Last update: {}</p>
+    </div>
+    """.format(datetime.now().strftime("%B %d, %Y")), unsafe_allow_html=True)
+
+st.markdown("---")
 
 # Load data
 @st.cache_data
@@ -127,8 +206,8 @@ if reddit_df is not None:
     with tab2:
         st.subheader("Sentiment Over Time")
         
-        # Resample by day
-        time_series = filtered_df.set_index('created_utc').resample('D')['polarity'].mean().reset_index()
+        # Resample by week for better 6-month view
+        time_series = filtered_df.set_index('created_utc').resample('W')['polarity'].mean().reset_index()
         
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -149,7 +228,7 @@ if reddit_df is not None:
         
         # Volume over time
         st.subheader("Post/Review Volume Over Time")
-        volume = filtered_df.set_index('created_utc').resample('D').size().reset_index(name='count')
+        volume = filtered_df.set_index('created_utc').resample('W').size().reset_index(name='count')
         fig = px.bar(volume, x='created_utc', y='count', color_discrete_sequence=['#764ba2'])
         st.plotly_chart(fig, use_container_width=True)
     
@@ -209,9 +288,25 @@ if reddit_df is not None:
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #64748B;'>
-        <p>💡 Data collected from Reddit (r/longbeach) | Updated periodically</p>
-        <p>Built with Streamlit, TextBlob, and ❤️</p>
+        <p>💡 <strong>Data Source:</strong> Reddit r/longbeach community | <strong>Analysis:</strong> TextBlob NLP | <strong>Updated:</strong> Periodically</p>
+        <p><em>Note: Reddit demographics may not represent all Long Beach residents. Future updates will include additional platforms.</em></p>
+        <p>Built with Streamlit, TextBlob, PRAW, and ❤️ for Long Beach</p>
     </div>
     """, unsafe_allow_html=True)
 else:
     st.warning("⚠️ Please run the Colab notebook to collect and analyze data first!")
+    
+    st.info("""
+    **💡 About Data Collection:**
+    
+    This dashboard currently analyzes Reddit discussions from r/longbeach. 
+    
+    **Future enhancements may include:**
+    - Nextdoor (pending API access)
+    - Twitter/X Long Beach mentions
+    - Local news comment sections
+    - City council meeting transcripts
+    
+    Reddit provides a great snapshot of community sentiment, though it may skew towards younger, 
+    more tech-savvy residents. We acknowledge this limitation and aim to expand data sources over time.
+    """)
