@@ -5,3 +5,5 @@ plotly
 requests
 wordcloud
 matplotlib
+
+tweepy
