@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from datetime import datetime
 
@@ -90,7 +89,7 @@ if data_df is not None:
             ]
     
     # Tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Trends", "☁️ Word Clouds", "📝 Top Posts & Data"])
+    tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Trends", "📝 Top Posts & Data"])
     
     with tab1:
         col1, col2 = st.columns(2)
@@ -209,34 +208,6 @@ if data_df is not None:
             st.plotly_chart(fig, use_container_width=True)
     
     with tab3:
-        st.subheader("Most Common Words")
-        st.caption("Bigger words appear more frequently")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        for col, sentiment, color in zip([col1, col2, col3], 
-                                         ['Positive', 'Neutral', 'Negative'],
-                                         ['Greens', 'Oranges', 'Reds']):
-            with col:
-                st.write(f"**{sentiment}**")
-                sentiment_text = ' '.join(filtered_df[filtered_df['sentiment'] == sentiment]['combined_text'].dropna())
-                
-                if sentiment_text:
-                    wordcloud = WordCloud(
-                        width=400,
-                        height=300,
-                        background_color='white',
-                        colormap=color,
-                        max_words=50
-                    ).generate(sentiment_text)
-                    
-                    fig, ax = plt.subplots(figsize=(5, 4))
-                    ax.imshow(wordcloud, interpolation='bilinear')
-                    ax.axis('off')
-                    st.pyplot(fig)
-                else:
-                    st.info(f"No {sentiment.lower()} posts")
-    
     with tab4:
         st.subheader("📌 Top Engaged Posts")
         st.caption("Most liked and commented discussions")

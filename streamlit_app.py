@@ -6,7 +6,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🗺️ GIS & Climate Solutions Portfolio")
+st.title("🗺️ GIS & Data Analytics Portfolio")
 
 # New Dashboard: Community Voice
 st.info("💬 **NEW:** Check out the Community Pulse dashboard in the sidebar - tracking Long Beach online conversations!")
