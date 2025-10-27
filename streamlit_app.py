@@ -133,6 +133,16 @@ with col2:
         """)
         if st.button("View Activity Map →", key="wildfire", use_container_width=True):
             st.switch_page("pages/3_Wildfire_Risk.py")
+    with st.container(border=True):
+        st.markdown("### 📣 Long Beach Community Voice (Past & Recent)")
+        st.markdown("""**Public conversation snapshots (portfolio demo)**
+
+Topics, tone (positive/neutral/negative), trends, geotag map, and top posts ranked with a source-aware engagement score.
+
+**Skills:** NLP sentiment, data ethics, visualization""")
+        if st.button("View Community Voice →", key="community_voice", use_container_width=True):
+            st.switch_page("pages/4_Community_Voice_Long_Beach.py")
+
     
     with st.container(border=True):
         st.markdown("### 🏗️ Building Damage Assessment")
