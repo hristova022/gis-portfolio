@@ -7,3 +7,5 @@ wordcloud
 matplotlib
 
 tweepy
+vaderSentiment
+scikit-learn
