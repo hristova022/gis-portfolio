@@ -79,8 +79,7 @@ with col1:
         **Skills Demonstrated:** GIS analysis, temporal trends, predictive modeling,
         interactive decision support, data visualization
         """)
-        if st.button("View Full Analysis →", key="homeless", use_container_width=True):
-            st.switch_page("pages/1_Homeless_Resources.py")
+        st.page_link("pages/1_Homeless_Resources.py", label="View Full Analysis →")
     
     with st.container(border=True):
         st.markdown("### 🅿️ Long Beach Parking Analysis")
@@ -99,8 +98,7 @@ with col1:
         **Skills Demonstrated:** Computer vision, satellite imagery analysis, 
         spatial statistics, municipal data analysis, interactive visualization
         """)
-        if st.button("View Full Analysis →", key="parking", use_container_width=True):
-            st.switch_page("pages/2_Parking_Analysis.py")
+        st.page_link("pages/2_Parking_Analysis.py", label="View Full Analysis →")
     
     with st.container(border=True):
         st.markdown("### 🌊 Sea Level Rise Simulator")
@@ -131,8 +129,7 @@ with col2:
         **Skills Demonstrated:** Risk modeling, spatial analysis, data synthesis 
         from multiple sources (CAL FIRE, NASA FIRMS, county records), clear data storytelling
         """)
-        if st.button("View Activity Map →", key="wildfire", use_container_width=True):
-            st.switch_page("pages/3_Wildfire_Risk.py")
+        st.page_link("pages/3_Wildfire_Risk.py", label="View Activity Map →")
     with st.container(border=True):
         st.markdown("### 📣 Long Beach Community Voice (Past & Recent)")
         st.markdown("""**Public conversation snapshots (portfolio demo)**
@@ -140,8 +137,7 @@ with col2:
 Topics, tone (positive/neutral/negative), trends, geotag map, and top posts ranked with a source-aware engagement score.
 
 **Skills:** NLP sentiment, data ethics, visualization""")
-        if st.button("View Community Voice →", key="community_voice", use_container_width=True):
-            st.switch_page("pages/4_Community_Voice_Long_Beach.py")
+        st.page_link("pages/4_Community_Voice_Long_Beach.py", label="View Community Voice →")
 
     
     with st.container(border=True):
