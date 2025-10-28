@@ -25,13 +25,6 @@ st.markdown("""
         text-align: center;
         padding: 1rem 0;
     }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-    }
     .stMetric {
         background-color: #f8fafc;
         padding: 1rem;
