@@ -79,7 +79,7 @@ with col1:
         **Skills Demonstrated:** GIS analysis, temporal trends, predictive modeling,
         interactive decision support, data visualization
         """)
-        st.page_link("pages/1_Homeless_Resources.py", label="View Full Analysis →")
+        st.switch_page("pages/1_🏠_Homelessness_Resources.py", label="View Full Analysis →")
     
     with st.container(border=True):
         st.markdown("### 🅿️ Long Beach Parking Analysis")
@@ -98,7 +98,7 @@ with col1:
         **Skills Demonstrated:** Computer vision, satellite imagery analysis, 
         spatial statistics, municipal data analysis, interactive visualization
         """)
-        st.page_link("pages/2_Parking_Analysis.py", label="View Full Analysis →")
+        st.switch_page("pages/2_🅿️_Parking_Analysis.py", label="View Full Analysis →")
     
     with st.container(border=True):
         st.markdown("### 🌊 Sea Level Rise Simulator")
@@ -129,7 +129,7 @@ with col2:
         **Skills Demonstrated:** Risk modeling, spatial analysis, data synthesis 
         from multiple sources (CAL FIRE, NASA FIRMS, county records), clear data storytelling
         """)
-        st.page_link("pages/3_Wildfire_Risk.py", label="View Activity Map →")
+        st.switch_page("pages/4_🔥_Wildfire_Analysis.py", label="View Activity Map →")
     with st.container(border=True):
         st.markdown("### 📣 Long Beach Community Voice (Past & Recent)")
         st.markdown("""**Public conversation snapshots (portfolio demo)**
@@ -137,7 +137,7 @@ with col2:
 Topics, tone (positive/neutral/negative), trends, geotag map, and top posts ranked with a source-aware engagement score.
 
 **Skills:** NLP sentiment, data ethics, visualization""")
-        st.page_link("pages/4_Community_Voice_Long_Beach.py", label="View Community Voice →")
+        st.switch_page("pages/4_Community_Voice_Long_Beach.py", label="View Community Voice →")
 
     
     with st.container(border=True):
