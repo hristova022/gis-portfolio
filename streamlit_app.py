@@ -79,7 +79,8 @@ with col1:
         **Skills Demonstrated:** GIS analysis, temporal trends, predictive modeling,
         interactive decision support, data visualization
         """)
-        st.switch_page("pages/1_🏠_Homelessness_Resources.py", label="View Full Analysis →")
+        if st.button("View Full Analysis →", key="pages1🏠homelessnessresources", use_container_width=True):
+            st.switch_page("pages/1_🏠_Homelessness_Resources.py")
     
     with st.container(border=True):
         st.markdown("### 🅿️ Long Beach Parking Analysis")
@@ -98,7 +99,8 @@ with col1:
         **Skills Demonstrated:** Computer vision, satellite imagery analysis, 
         spatial statistics, municipal data analysis, interactive visualization
         """)
-        st.switch_page("pages/2_🅿️_Parking_Analysis.py", label="View Full Analysis →")
+        if st.button("View Full Analysis →", key="pages2🅿️parkinganalysis", use_container_width=True):
+            st.switch_page("pages/2_🅿️_Parking_Analysis.py")
     
     with st.container(border=True):
         st.markdown("### 🌊 Sea Level Rise Simulator")
@@ -129,7 +131,8 @@ with col2:
         **Skills Demonstrated:** Risk modeling, spatial analysis, data synthesis 
         from multiple sources (CAL FIRE, NASA FIRMS, county records), clear data storytelling
         """)
-        st.switch_page("pages/4_🔥_Wildfire_Analysis.py", label="View Activity Map →")
+        if st.button("View Activity Map →", key="pages4🔥wildfireanalysis", use_container_width=True):
+            st.switch_page("pages/4_🔥_Wildfire_Analysis.py")
     with st.container(border=True):
         st.markdown("### 📣 Long Beach Community Voice (Past & Recent)")
         st.markdown("""**Public conversation snapshots (portfolio demo)**
@@ -137,7 +140,8 @@ with col2:
 Topics, tone (positive/neutral/negative), trends, geotag map, and top posts ranked with a source-aware engagement score.
 
 **Skills:** NLP sentiment, data ethics, visualization""")
-        st.switch_page("pages/4_Community_Voice_Long_Beach.py", label="View Community Voice →")
+        if st.button("View Community Voice →", key="pages4communityvoicelongbeach", use_container_width=True):
+            st.switch_page("pages/4_Community_Voice_Long_Beach.py")
 
     
     with st.container(border=True):
