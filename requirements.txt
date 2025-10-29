@@ -10,11 +10,7 @@ vaderSentiment
 scikit-learn
 
 
-# Sea Level Rise page dependencies
 geopandas==0.14.0
 folium==0.14.0
 streamlit-folium==0.15.0
 
-# Sea Level Rise Simulator dependencies
-rasterio==1.3.8
-elevation==1.1.3
