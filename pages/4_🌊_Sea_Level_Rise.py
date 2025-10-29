@@ -11,7 +11,7 @@ import folium
 from streamlit_folium import st_folium
 import plotly.express as px
 import plotly.graph_objects as go
-from pathlib import Path
+import os
 
 st.set_page_config(page_title="Sea Level Rise Simulator", page_icon="🌊", layout="wide")
 
@@ -37,17 +37,17 @@ st.markdown("""
 @st.cache_data
 def load_data():
     data = {}
-    base_path = Path('data/sea_level_rise/processed')
+    base_path = 'data/sea_level_rise/processed'
     
-    data['scenarios'] = json.load(open(base_path / 'flood_scenarios.json'))
-    data['impacts'] = pd.read_csv(base_path / 'property_impact.csv')
-    data['infrastructure'] = gpd.read_file(base_path / 'infrastructure_all.geojson')
-    data['boundary'] = gpd.read_file(base_path / 'long_beach_boundary.geojson')
+    data['scenarios'] = json.load(open(f'{base_path}/flood_scenarios.json'))
+    data['impacts'] = pd.read_csv(f'{base_path}/property_impact.csv')
+    data['infrastructure'] = gpd.read_file(f'{base_path}/infrastructure_all.geojson')
+    data['boundary'] = gpd.read_file(f'{base_path}/long_beach_boundary.geojson')
     
     data['flood_zones'] = {}
     for scenario in data['scenarios'].keys():
         try:
-            data['flood_zones'][scenario] = gpd.read_file(base_path / f'flood_zone_{scenario}.geojson')
+            data['flood_zones'][scenario] = gpd.read_file(f'{base_path}/flood_zone_{scenario}.geojson')
         except:
             pass
     
