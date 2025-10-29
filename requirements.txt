@@ -9,3 +9,8 @@ tweepy
 vaderSentiment
 scikit-learn
 
+
+# Sea Level Rise page dependencies
+geopandas==0.14.0
+folium==0.14.0
+streamlit-folium==0.15.0
