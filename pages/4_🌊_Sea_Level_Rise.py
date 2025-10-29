@@ -11,7 +11,7 @@ import folium
 from streamlit_folium import st_folium
 import plotly.express as px
 import plotly.graph_objects as go
-import os
+from pathlib import Path
 
 st.set_page_config(page_title="Sea Level Rise Simulator", page_icon="🌊", layout="wide")
 
@@ -33,24 +33,43 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Load data
+# Load data (robust: avoids Fiona/GDAL at runtime)
 @st.cache_data
 def load_data():
+    base_path = Path('data/sea_level_rise/processed')
+
+    def _read_geojson(pathlike):
+        """Robust reader that avoids Fiona/GDAL on Streamlit Cloud."""
+        try:
+            # Try normal path first (cast Path -> str for compatibility)
+            return gpd.read_file(str(pathlike))
+        except Exception:
+            # Fallback: pure JSON parse → GeoDataFrame.from_features
+            with open(pathlike, 'r', encoding='utf-8') as f:
+                gj = json.load(f)
+            feats = gj.get('features', [])
+            return gpd.GeoDataFrame.from_features(feats, crs='EPSG:4326')
+
     data = {}
-    base_path = 'data/sea_level_rise/processed'
-    
-    data['scenarios'] = json.load(open(f'{base_path}/flood_scenarios.json'))
-    data['impacts'] = pd.read_csv(f'{base_path}/property_impact.csv')
-    data['infrastructure'] = gpd.read_file(f'{base_path}/infrastructure_all.geojson')
-    data['boundary'] = gpd.read_file(f'{base_path}/long_beach_boundary.geojson')
-    
+    # JSON + CSV
+    with open(base_path / 'flood_scenarios.json', 'r', encoding='utf-8') as f:
+        data['scenarios'] = json.load(f)
+    data['impacts'] = pd.read_csv(base_path / 'property_impact.csv')
+
+    # GeoJSONs via robust reader
+    data['infrastructure'] = _read_geojson(base_path / 'infrastructure_all.geojson')
+    data['boundary'] = _read_geojson(base_path / 'long_beach_boundary.geojson')
+
+    # Flood zones per scenario
     data['flood_zones'] = {}
     for scenario in data['scenarios'].keys():
-        try:
-            data['flood_zones'][scenario] = gpd.read_file(f'{base_path}/flood_zone_{scenario}.geojson')
-        except:
-            pass
-    
+        p = base_path / f'flood_zone_{scenario}.geojson'
+        if p.exists():
+            try:
+                data['flood_zones'][scenario] = _read_geojson(p)
+            except Exception:
+                pass
+
     return data
 
 with st.spinner("Loading sea level rise data..."):
