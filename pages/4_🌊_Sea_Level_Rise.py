@@ -180,8 +180,9 @@ if show_flood and selected_scenario in data['flood_zones']:
         },
         smooth_factor=1.2,
         tooltip=folium.GeoJsonTooltip(
-            fields=['scenario', 'rise_ft', 'year'],
-            aliases=['Scenario:', 'Rise:', 'Year:']
+            fields=['rise_ft', 'year'],
+            aliases=['Sea Level Rise:', 'Expected By:'],
+            style='background-color: white; color: black; font-size: 14px; padding: 8px; border-radius: 5px;'
         )
     ).add_to(m)
 
