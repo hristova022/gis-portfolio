@@ -36,6 +36,10 @@ st.markdown("""
         margin: 1rem 0;
         border-radius: 4px;
     }
+    [data-testid="stSidebar"] .stMetric {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -115,7 +119,7 @@ st.markdown("---")
 
 # Sidebar
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Seal_of_Long_Beach%2C_California.svg/200px-Seal_of_Long_Beach%2C_California.svg.png", width=100)
+    
     st.title("🌊 Select Scenario")
     
     scenario_labels = {
