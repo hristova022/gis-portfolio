@@ -16,24 +16,7 @@ from pathlib import Path
 st.set_page_config(page_title="Sea Level Rise Simulator", page_icon="🌊", layout="wide")
 
 # Simple styling - matches your other pages
-st.markdown("""
-<style>
-    .stMetric {
-        background-color: #f8fafc;
-        padding: 1rem;
-        border-radius: 8px;
-    }
-    .stMetric label {
-        color: #1f2937 !important;
-    }
-    .stMetric [data-testid="stMetricValue"] {
-        color: #111827 !important;
-    }
-    .stMetric [data-testid="stMetricDelta"] {
-        color: #374151 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# No custom styling - use default Streamlit metrics
 
 # Helper functions
 def _load_geojson(pathlike):
