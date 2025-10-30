@@ -77,6 +77,14 @@ This tool shows which parts of Long Beach could flood as sea levels rise. Use th
 to explore different scenarios and see which homes, businesses, and infrastructure are at risk.
 """)
 
+st.warning("""
+⚠️ **Important Disclaimer:** This is a simplified screening tool for educational and planning purposes only. 
+It uses basic elevation calculations and does not predict actual flooding. Real flood risk depends on many 
+factors not included here (storm surge, drainage, sea walls, etc.). **Do not use this for property decisions 
+or emergency planning.** For accurate flood risk assessment, consult with local authorities, licensed engineers, 
+or FEMA flood maps.
+""")
+
 st.markdown("---")
 
 # Sidebar
@@ -251,6 +259,13 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 with tab1:
     st.markdown("## 📖 Understanding Sea Level Rise")
+    
+    st.warning("""
+    **⚠️ Educational Tool Only:** This analysis uses simplified calculations and assumptions. 
+    It is NOT a prediction of actual flooding and should NOT be used for property purchases, 
+    insurance decisions, or emergency planning. Always consult professional assessments and 
+    official flood maps for real decisions.
+    """)
     
     st.markdown("""
     ### What This Tool Shows
