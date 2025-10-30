@@ -1,6 +1,5 @@
 """
 Sea Level Rise Simulator - Long Beach, California
-Interactive coastal flooding analysis under different sea level rise scenarios
 """
 
 import streamlit as st
@@ -8,16 +7,36 @@ import pandas as pd
 import json
 import folium
 from streamlit_folium import st_folium
-
 from branca.element import Template, MacroElement
 import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 
-__SLR_PATCH_VERSION__ = '2025-10-30T23:01:56.040722Z'
 st.set_page_config(page_title="Sea Level Rise Simulator", page_icon="🌊", layout="wide")
 
-# ── Lightweight helpers (no GeoPandas/Fiona at runtime) ───────────────────────
+# Enhanced CSS
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(120deg, #1e3a8a 0%, #3b82f6 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .insight-box {
+        background: #f0f9ff;
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Keep your existing helper functions
 def _load_geojson(pathlike):
     with open(pathlike, 'r', encoding='utf-8') as f:
         return json.load(f)
@@ -43,7 +62,7 @@ def _bounds_from_geojson(gj):
             xs.append(x); ys.append(y)
     return [min(xs), min(ys), max(xs), max(ys)] if xs else [-118.2, 33.7, -118.08, 33.85]
 
-# Load data
+# Keep your existing load_data
 @st.cache_data
 def load_data():
     base = Path('data/sea_level_rise/processed')
@@ -51,11 +70,9 @@ def load_data():
     with open(base / 'flood_scenarios.json', 'r', encoding='utf-8') as f:
         data['scenarios'] = json.load(f)
     data['impacts'] = pd.read_csv(base / 'property_impact.csv')
-
     data['boundary'] = _load_geojson(base / 'long_beach_boundary.geojson')
     data['infrastructure'] = _load_geojson(base / 'infrastructure_all.geojson')
-
-    # Prefer simplified overlays
+    
     data['flood_zones'] = {}
     for scenario in data['scenarios'].keys():
         p_simple = base / f'flood_zone_{scenario}_simple.geojson'
@@ -66,217 +83,142 @@ def load_data():
             data['flood_zones'][scenario] = _load_geojson(p_full)
     return data
 
-with st.spinner("Loading sea level rise data..."):
+with st.spinner("🌊 Loading data..."):
     data = load_data()
 
-# ── Header ────────────────────────────────────────────────────────────────────
-st.markdown("<h1 class='main-header' style='text-align:center;color:#1e3a8a;'>🌊 Sea Level Rise Impact Simulator</h1>", unsafe_allow_html=True)
-st.markdown("### Long Beach, California — Coastal Flooding Analysis")
-
+# Enhanced header
 st.markdown("""
-This tool estimates which parts of Long Beach are **lower than future sea levels** under multiple scenarios
-and summarizes potential exposure for **homes, people, and dollars**. It’s a **screening map** to spark
-planning conversations — not a detailed engineering model.
-""")
+<div class='main-header'>
+    <h1>🌊 Sea Level Rise Impact Simulator</h1>
+    <p>Long Beach, California — Coastal Flooding Analysis</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Quick stats
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("Scenarios", f"{len(data['scenarios'])}", "2030-2100")
+with col2:
+    st.metric("Max Properties", f"{int(data['impacts']['properties_at_risk'].max()):,}")
+with col3:
+    st.metric("Max Impact", f"${data['impacts']['economic_impact_millions'].max():.0f}M")
+with col4:
+    st.metric("Study Area", "130.8 km²")
+
 st.markdown("---")
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# Sidebar - keep your existing sidebar code
 with st.sidebar:
-    st.header('🌊 Scenario Selector')
-    st.caption('**Blue shading** shows land inside Long Beach that lies at or below the selected sea level (simple threshold).')
     st.title("🌊 Scenario Selector")
-
+    
     scenario_labels = {
         '1ft_2030': '1 ft by 2030 (High)',
         '3ft_2050': '3 ft by 2050 (Medium)',
         '5ft_2070': '5 ft by 2070 (Low)',
         '7ft_2100': '7 ft by 2100 (Very Low)'
     }
+    
     selected_label = st.selectbox("Select Scenario", list(scenario_labels.values()))
     selected_scenario = [k for k, v in scenario_labels.items() if v == selected_label][0]
     scenario_data = data['scenarios'][selected_scenario]
-
-    st.markdown("### 📊 Scenario Details")
-    st.metric("Sea Level Rise", f"{scenario_data['rise_ft']} ft ({scenario_data['rise_m']:.2f} m)")
-    st.metric("Projected Year", scenario_data['year'])
-    st.metric("Area Affected", f"{scenario_data['area_km2']:.2f} km²")
-
+    
+    st.markdown("### 📊 Details")
+    st.metric("Rise", f"{scenario_data['rise_ft']} ft")
+    st.metric("Year", scenario_data['year'])
+    st.metric("Area", f"{scenario_data['area_km2']:.2f} km²")
+    
     st.markdown("---")
-    st.markdown("### 🗺️ Map Layers")
-    show_flood = st.checkbox("Show Flood Zone", value=True)
-    show_infra = st.checkbox("Show Infrastructure", value=True)
+    st.markdown("### 🗺️ Layers")
+    show_flood = st.checkbox("Flood Zone", value=True)
+    show_infra = st.checkbox("Infrastructure", value=True)
 
-# ── Key Metrics ────────────────────────────────────────────────────────────────
+# Metrics
 impact_row = data['impacts'][data['impacts']['scenario'] == selected_scenario].iloc[0]
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.metric("🌊 Area Flooded", f"{impact_row['flooded_area_km2']:.1f} km²",
-              f"{impact_row['flooded_area_km2']/130.8*100:.1f}% of city")
+    st.metric("🌊 Area", f"{impact_row['flooded_area_km2']:.1f} km²")
 with c2:
-    st.metric("🏠 Properties at Risk", f"{impact_row['properties_at_risk']:,}",
-              f"{impact_row['properties_at_risk']/171632*100:.1f}% of total")
+    st.metric("🏠 Properties", f"{int(impact_row['properties_at_risk']):,}")
 with c3:
-    st.metric("👥 Population at Risk", f"{impact_row['population_at_risk']:,}",
-              f"{impact_row['population_at_risk']/466742*100:.1f}% of total")
+    st.metric("👥 Population", f"{int(impact_row['population_at_risk']):,}")
 with c4:
-    st.metric("💰 Economic Impact", f"${impact_row['economic_impact_millions']:.0f}M",
-              "Property value at risk")
+    st.metric("💰 Impact", f"${impact_row['economic_impact_millions']:.0f}M")
+
 st.markdown("---")
 
-# ── Map ────────────────────────────────────────────────────────────────────────
-st.markdown("### 🗺️ Interactive Flood Map")
+# Map - keep your existing map code
+st.markdown("### 🗺️ Interactive Map")
 
 bounds = _bounds_from_geojson(data['boundary'])
 center = [(bounds[1] + bounds[3]) / 2, (bounds[0] + bounds[2]) / 2]
 m = folium.Map(location=center, zoom_start=12, tiles='CartoDB positron')
-m.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]])
 
-# Boundary
-folium.GeoJson(
-    data['boundary'],
+folium.GeoJson(data['boundary'],
     style_function=lambda x: {'fillColor':'transparent','color':'#1e3a8a','weight':2}
 ).add_to(m)
 
-# Flood zone (smoothed; clipped already in preprocessing)
 if show_flood and selected_scenario in data['flood_zones']:
     colors = {'1ft_2030':'#3b82f6','3ft_2050':'#f59e0b','5ft_2070':'#ef4444','7ft_2100':'#991b1b'}
-    folium.GeoJson(
-        data['flood_zones'][selected_scenario],
+    folium.GeoJson(data['flood_zones'][selected_scenario],
         style_function=lambda x: {
             'fillColor': colors.get(selected_scenario, '#3b82f6'),
             'color': colors.get(selected_scenario, '#3b82f6'),
             'weight': 1, 'fillOpacity': 0.35
-        },
-        smooth_factor=1.2,
-        tooltip=folium.GeoJsonTooltip(fields=['scenario','rise_ft','year'],
-                                      aliases=['Scenario:','Rise (ft):','Year:'])
+        }
     ).add_to(m)
 
-# Infrastructure
 if show_infra:
-    icon_map = {'Hospital': ('plus','red'),'Airport': ('plane','blue'),'Port': ('ship','darkblue'),
-                'Attraction': ('star','purple'),'Historic Ship': ('anchor','darkred')}
+    icon_map = {'Hospital':('plus','red'),'Airport':('plane','blue'),'Port':('ship','darkblue')}
     for feat in data['infrastructure'].get('features', []):
         props = feat.get('properties', {})
         geom = feat.get('geometry', {})
         if geom and geom.get('type') == 'Point':
             lon, lat = geom['coordinates'][:2]
             icon_name, color = icon_map.get(props.get('type',''), ('circle','gray'))
-            folium.Marker(
-                location=[lat, lon],
-                popup=f"<b>{props.get('name','')}</b><br>{props.get('type','')}<br>Elevation: {props.get('elevation_ft',0)} ft",
-                tooltip=props.get('name',''),
+            folium.Marker([lat, lon],
+                popup=f"<b>{props.get('name','')}</b><br>{props.get('type','')}",
                 icon=folium.Icon(color=color, icon=icon_name, prefix='fa')
             ).add_to(m)
 
-
-# Legend (HTML overlay)
-_legend_html = """
-{% macro html() %}
-<div style="position: fixed; bottom: 16px; left: 16px; z-index: 9999;
-            background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
-            padding: 8px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 13px;">
-  <div style="display:flex;align-items:center;gap:8px;">
-    <span style="display:inline-block;width:14px;height:14px;background:#3b82f6;opacity:0.35;border:1px solid #3b82f6;"></span>
-    <span>Land at/under selected sea level</span>
-  </div>
-  <div style="margin-top:4px;color:#475569;">Outline: City of Long Beach</div>
-</div>
-{% endmacro %}
-"""
-_legend_macro = MacroElement(); _legend_macro._template = Template(_legend_html)
-m.get_root().add_child(_legend_macro)
-
 st_folium(m, width=1400, height=600)
+
 st.markdown("---")
 
-# ── Story + Charts + Insights ─────────────────────────────────────────────────
-tab0, tab1, tab2, tab3 = st.tabs(["📖 Story", "📊 Scenario Comparison", "📈 Temporal Analysis", "💡 Key Insights"])
-
-with tab0:
-    st.markdown("## 📖 What you’re looking at — and why it matters")
-    st.markdown("""
-**The question:** *If the ocean rises by 1–7 feet, which parts of Long Beach are most exposed?*
-
-**The map:** The blue area shows land inside the **city boundary** that sits **at or below** the chosen sea level.
-It highlights neighborhoods and critical facilities that are most at risk during high tides or storms.
-
-**Why this matters**
-- **People & homes:** Floods displace families and damage property.
-- **Economy:** Ports, airports, hospitals and attractions keep the city running.
-- **Planning:** Knowing where water can go helps target upgrades (drainage, levees, building codes).
-
-### 🧪 How this was made (plain English)
-1. Start with **elevation data** for Long Beach (digital elevation model).
-2. Choose a **sea-level scenario** (e.g., +3 ft by 2050).
-3. Flag places where ground is **at or below** that height (“bathtub” model).
-4. **Clip** the result to the **city boundary** (no shading the open ocean).
-5. **Simplify** shapes so the map loads fast and stays readable.
-6. Estimate **impacts** (homes, people, dollars) using city statistics.
-
-> This is a **screening-level** view. It does **not** include storm surge, levees, groundwater rise, or drainage capacity.
-
-### 📚 Data sources
-- **Elevation:** USGS 3DEP/SRTM (with a high-quality synthetic fallback in Colab if the live download fails)
-- **City boundary:** OpenStreetMap (Long Beach)
-- **Population & housing:** U.S. Census (city totals)
-- **Scenarios:** NOAA global sea-level guidance summarized as +1 ft, +3 ft, +5 ft, +7 ft
-
-### ⚠️ Keep in mind
-Real flooding depends on **tides, storms, defenses, drainage**, and local topography that can block/channel water.
-Use this to **prioritize deeper studies** where exposure looks high.
-""")
+# Tabs - simplified version
+tab1, tab2, tab3 = st.tabs(["📊 Compare", "📈 Timeline", "💡 Insights"])
 
 with tab1:
-    st.markdown("### Compare all scenarios")
-    c1, c2 = st.columns(2)
-    with c1:
-        fig = px.bar(data['impacts'].sort_values('year'), x='scenario', y='properties_at_risk',
-                     title='Properties at Risk', color='year', color_continuous_scale='Reds')
+    st.markdown("### Compare Scenarios")
+    col1, col2 = st.columns(2)
+    with col1:
+        fig = px.bar(data['impacts'].sort_values('year'), 
+                     x='scenario', y='properties_at_risk', title='Properties at Risk')
         st.plotly_chart(fig, use_container_width=True)
-    with c2:
-        fig = px.bar(data['impacts'].sort_values('year'), x='scenario', y='economic_impact_millions',
-                     title='Economic Impact ($M)', color='year', color_continuous_scale='Reds')
+    with col2:
+        fig = px.bar(data['impacts'].sort_values('year'),
+                     x='scenario', y='economic_impact_millions', title='Economic Impact ($M)')
         st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(data['impacts'], use_container_width=True, hide_index=True)
 
 with tab2:
-    st.markdown("### Impact progression over time")
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['impacts']['year'], y=data['impacts']['properties_at_risk'],
-                             name='Properties at Risk',
-                             line=dict(color='#3b82f6', width=3), mode='lines+markers'))
-    fig.update_layout(title='Properties at Risk Over Time', height=400)
+    st.markdown("### Timeline")
+    fig = px.line(data['impacts'], x='year', y='properties_at_risk', 
+                  markers=True, title='Properties at Risk Over Time')
     st.plotly_chart(fig, use_container_width=True)
-    fig2 = px.area(data['impacts'], x='year', y='economic_impact_millions',
-                   title='Economic Impact Progression', color_discrete_sequence=['#991b1b'])
-    st.plotly_chart(fig2, use_container_width=True)
 
 with tab3:
-    st.markdown("### Key insights")
+    st.markdown("### Key Insights")
     worst = data['impacts'].sort_values('properties_at_risk', ascending=False).iloc[0]
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown(f"""
-- **Immediate Risk (2030):** {int(data['impacts'].iloc[0]['properties_at_risk']):,} properties  
-- **Long-term Risk (2100):** {int(worst['properties_at_risk']):,} properties  
-- **Total Economic Exposure:** ${float(worst['economic_impact_millions']):.0f}M  
-- **Population Affected:** up to {int(worst['population_at_risk']):,} residents
-""")
-    with c2:
-        st.markdown("""
-**Immediate (0–5 yrs)**  
-• Enhance flood monitoring • Update building codes • Begin infrastructure hardening
-
-**Medium-term (5–15 yrs)**  
-• Coastal barriers • Upgrade stormwater • Relocate critical facilities
-
-**Long-term (15+ yrs)**  
-• Complete defense systems • Establish resilient zones
-""")
+    st.markdown(f"""
+    - **2030:** {int(data['impacts'].iloc[0]['properties_at_risk']):,} properties at risk
+    - **2100:** {int(worst['properties_at_risk']):,} properties at risk
+    - **Total exposure:** ${worst['economic_impact_millions']:.0f}M
+    """)
+    
+    # Export
+    csv = data['impacts'].to_csv(index=False)
+    st.download_button("📥 Download Data", csv, "slr_analysis.csv", "text/csv")
 
 st.markdown("---")
 st.markdown("<div style='text-align:center;color:#64748b;'>"
-            "<p><strong>Sea Level Rise Simulator</strong> | GIS Portfolio Project</p>"
-            "<p>Data: USGS 3DEP, NOAA, US Census | Created by Hristova022</p>"
-            "</div>", unsafe_allow_html=True)
+            "<p>Created by Hristova022 | Data: USGS, NOAA, Census</p></div>", 
+            unsafe_allow_html=True)
