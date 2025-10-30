@@ -8,10 +8,13 @@ import pandas as pd
 import json
 import folium
 from streamlit_folium import st_folium
+
+from branca.element import Template, MacroElement
 import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 
+__SLR_PATCH_VERSION__ = '2025-10-30T23:01:56.040722Z'
 st.set_page_config(page_title="Sea Level Rise Simulator", page_icon="🌊", layout="wide")
 
 # ── Lightweight helpers (no GeoPandas/Fiona at runtime) ───────────────────────
@@ -79,7 +82,8 @@ st.markdown("---")
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Seal_of_Long_Beach%2C_California.svg/200px-Seal_of_Long_Beach%2C_California.svg.png", width=100)
+    st.header('🌊 Scenario Selector')
+    st.caption('**Blue shading** shows land inside Long Beach that lies at or below the selected sea level (simple threshold).')
     st.title("🌊 Scenario Selector")
 
     scenario_labels = {
@@ -125,6 +129,7 @@ st.markdown("### 🗺️ Interactive Flood Map")
 bounds = _bounds_from_geojson(data['boundary'])
 center = [(bounds[1] + bounds[3]) / 2, (bounds[0] + bounds[2]) / 2]
 m = folium.Map(location=center, zoom_start=12, tiles='CartoDB positron')
+m.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]])
 
 # Boundary
 folium.GeoJson(
@@ -163,6 +168,24 @@ if show_infra:
                 tooltip=props.get('name',''),
                 icon=folium.Icon(color=color, icon=icon_name, prefix='fa')
             ).add_to(m)
+
+
+# Legend (HTML overlay)
+_legend_html = """
+{% macro html() %}
+<div style="position: fixed; bottom: 16px; left: 16px; z-index: 9999;
+            background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
+            padding: 8px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 13px;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span style="display:inline-block;width:14px;height:14px;background:#3b82f6;opacity:0.35;border:1px solid #3b82f6;"></span>
+    <span>Land at/under selected sea level</span>
+  </div>
+  <div style="margin-top:4px;color:#475569;">Outline: City of Long Beach</div>
+</div>
+{% endmacro %}
+"""
+_legend_macro = MacroElement(); _legend_macro._template = Template(_legend_html)
+m.get_root().add_child(_legend_macro)
 
 st_folium(m, width=1400, height=600)
 st.markdown("---")
