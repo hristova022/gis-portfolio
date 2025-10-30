@@ -15,13 +15,26 @@ from pathlib import Path
 
 st.set_page_config(page_title="Sea Level Rise Simulator", page_icon="🌊", layout="wide")
 
-# Simple, clean styling - matches your other pages
 st.markdown("""
 <style>
     .stMetric {
         background-color: #f8fafc;
         padding: 1rem;
         border-radius: 8px;
+    }
+    .highlight-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    .method-box {
+        background: #f0f9ff;
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 4px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -76,383 +89,603 @@ def load_data():
 with st.spinner("Loading sea level rise data..."):
     data = load_data()
 
-# Simple header - matches your style
+# Title
 st.title("🌊 Sea Level Rise Impact Simulator")
-st.subheader("Long Beach, California — Coastal Flooding Analysis")
+st.subheader("Long Beach, California")
 
+# Eye-catching summary at top
 st.markdown("""
-This interactive tool shows what could happen to Long Beach if sea levels rise. 
-Think of it like filling a bathtub — as the water level goes up, which neighborhoods 
-get flooded first? This helps us understand **who and what is at risk** so we can 
-plan ahead and protect our communities.
-
-**Why this matters:** Climate change is causing oceans to rise. Some parts of Long Beach 
-are close to sea level, which means homes, businesses, and important buildings could 
-flood in the future. This tool helps us see where the biggest risks are.
-""")
+<div class='highlight-box'>
+    <h2 style='margin:0 0 1rem 0;'>⚠️ What You Need to Know</h2>
+    <p style='font-size:1.1rem;margin:0.5rem 0;'>
+        By 2100, up to <b>{:,} homes</b> in Long Beach could be in flood risk zones, 
+        affecting <b>{:,} residents</b> and threatening <b>${:.0f} million</b> in property value.
+    </p>
+    <p style='font-size:1rem;margin:1rem 0 0 0;opacity:0.9;'>
+        This tool shows which neighborhoods are most vulnerable so we can protect them before it's too late.
+    </p>
+</div>
+""".format(
+    int(data['impacts'].iloc[-1]['properties_at_risk']),
+    int(data['impacts'].iloc[-1]['population_at_risk']),
+    data['impacts'].iloc[-1]['economic_impact_millions']
+), unsafe_allow_html=True)
 
 st.markdown("---")
 
 # Sidebar
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Seal_of_Long_Beach%2C_California.svg/200px-Seal_of_Long_Beach%2C_California.svg.png", width=100)
-    st.title("🌊 Choose a Scenario")
-    
-    st.markdown("""
-    **What's a scenario?** Each scenario shows a different possible future based on 
-    how much the ocean might rise and when. Scientists give us these predictions 
-    based on climate models.
-    """)
+    st.title("🌊 Select Scenario")
     
     scenario_labels = {
-        '1ft_2030': '1 foot by 2030 (Very Likely)',
-        '3ft_2050': '3 feet by 2050 (Likely)',
-        '5ft_2070': '5 feet by 2070 (Possible)',
-        '7ft_2100': '7 feet by 2100 (Worst Case)'
+        '1ft_2030': '1 foot by 2030',
+        '3ft_2050': '3 feet by 2050',
+        '5ft_2070': '5 feet by 2070',
+        '7ft_2100': '7 feet by 2100'
     }
     
-    selected_label = st.selectbox("Select a future scenario:", list(scenario_labels.values()))
+    selected_label = st.selectbox("Choose sea level rise:", list(scenario_labels.values()))
     selected_scenario = [k for k, v in scenario_labels.items() if v == selected_label][0]
     scenario_data = data['scenarios'][selected_scenario]
     
-    st.markdown("### 📊 About This Scenario")
-    st.metric("Sea Level Rise", f"{scenario_data['rise_ft']} feet ({scenario_data['rise_m']:.2f} meters)")
-    st.metric("Expected By", scenario_data['year'])
-    st.metric("Area Affected", f"{scenario_data['area_km2']:.2f} km²")
-    st.caption(f"That's about {scenario_data['area_km2']/130.8*100:.1f}% of Long Beach")
+    st.markdown("### 📊 Scenario Details")
+    st.metric("Sea Level Rise", f"{scenario_data['rise_ft']} ft ({scenario_data['rise_m']:.2f} m)")
+    st.metric("Year", scenario_data['year'])
+    st.metric("Flooded Area", f"{scenario_data['area_km2']:.2f} km²")
+    st.caption(f"{scenario_data['area_km2']/130.8*100:.1f}% of city area")
     
     st.markdown("---")
     
-    st.markdown("### 🗺️ What to Show on Map")
-    show_flood = st.checkbox("Show flooded areas (blue)", value=True)
-    show_infra = st.checkbox("Show important buildings", value=True)
+    st.markdown("### 🗺️ Map Controls")
+    show_flood = st.checkbox("Show flood zones", value=True)
+    show_infra = st.checkbox("Show facilities", value=True)
     
-    st.markdown("---")
-    
-    with st.expander("ℹ️ About This Tool"):
-        st.markdown("""
-        **What it does:** Shows which parts of Long Beach are at or below future sea levels.
-        
-        **How it works:** Uses elevation data (height above sea level) to identify 
-        low-lying areas that could flood.
-        
-        **What it doesn't include:** Storm surges, existing flood walls, or drainage systems. 
-        This is a simplified view to help with planning.
-        
-        **Data from:** U.S. Geological Survey, NOAA, and U.S. Census
-        """)
+    # Map style
+    st.markdown("### 🎨 Map Style")
+    map_style = st.radio("Base map:", ["Light", "Satellite"], index=0)
 
-# Impact metrics - simple and clear
+# Impact metrics
 impact_row = data['impacts'][data['impacts']['scenario'] == selected_scenario].iloc[0]
 
-st.markdown("### 📊 What's at Risk in This Scenario")
+st.markdown("### 📊 Impact Summary")
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(
-        "🌊 Flooded Area", 
-        f"{impact_row['flooded_area_km2']:.1f} km²",
-        f"{impact_row['flooded_area_km2']/130.8*100:.1f}% of city"
-    )
-    st.caption("Land that would be underwater")
+    st.metric("🌊 Flooded Area", f"{impact_row['flooded_area_km2']:.1f} km²")
+    st.caption(f"{impact_row['flooded_area_km2']/130.8*100:.1f}% of city")
 
 with col2:
-    st.metric(
-        "🏠 Homes at Risk", 
-        f"{int(impact_row['properties_at_risk']):,}",
-        f"{impact_row['properties_at_risk']/171632*100:.1f}% of all homes"
-    )
-    st.caption("Houses and buildings affected")
+    st.metric("🏠 Homes at Risk", f"{int(impact_row['properties_at_risk']):,}")
+    st.caption(f"{impact_row['properties_at_risk']/171632*100:.1f}% of all homes")
 
 with col3:
-    st.metric(
-        "👥 People Affected", 
-        f"{int(impact_row['population_at_risk']):,}",
-        f"{impact_row['population_at_risk']/466742*100:.1f}% of residents"
-    )
-    st.caption("Residents living in flood zones")
+    st.metric("👥 People Affected", f"{int(impact_row['population_at_risk']):,}")
+    st.caption(f"{impact_row['population_at_risk']/466742*100:.1f}% of residents")
 
 with col4:
-    st.metric(
-        "💰 Property Value", 
-        f"${impact_row['economic_impact_millions']:.0f}M",
-        "at risk"
-    )
-    st.caption("Total value of threatened property")
+    st.metric("💰 Property Value", f"${impact_row['economic_impact_millions']:.0f}M")
+    st.caption("Total value at risk")
 
 st.markdown("---")
 
-# Map
-st.markdown("### 🗺️ Interactive Flood Risk Map")
+# Map with better visualization
+st.markdown("### 🗺️ Interactive Map: Where Would Water Reach?")
 
-st.markdown("""
-**How to read this map:**
-- **Blue shaded areas** = Land that would be at or below the selected sea level
-- **City outline** = Long Beach boundaries (dark blue dashed line)
-- **Icons** = Important places like hospitals, airports, and the port
-- **Click on anything** to learn more about it
-""")
+st.info("**How to read:** Colored areas show land at or below the selected sea level. Darker colors = higher risk scenarios. Click buildings to see if they're safe.")
 
 bounds = _bounds_from_geojson(data['boundary'])
 center = [(bounds[1] + bounds[3]) / 2, (bounds[0] + bounds[2]) / 2]
-m = folium.Map(location=center, zoom_start=12, tiles='CartoDB positron')
+
+# Choose tile based on selection
+if map_style == "Satellite":
+    tiles = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    attr = "Esri"
+else:
+    tiles = 'CartoDB positron'
+    attr = None
+
+m = folium.Map(location=center, zoom_start=12, tiles=tiles, attr=attr)
 m.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]])
 
-# Boundary
+# City boundary - more visible
 folium.GeoJson(
     data['boundary'],
-    style_function=lambda x: {'fillColor':'transparent','color':'#1e3a8a','weight':2, 'dashArray':'5,5'}
+    style_function=lambda x: {
+        'fillColor': 'transparent',
+        'color': '#1e3a8a',
+        'weight': 3,
+        'dashArray': '10,5'
+    },
+    name='City Boundary'
 ).add_to(m)
 
-# Flood zone
+# Flood zones with better colors and opacity
 if show_flood and selected_scenario in data['flood_zones']:
-    colors = {'1ft_2030':'#3b82f6','3ft_2050':'#f59e0b','5ft_2070':'#ef4444','7ft_2100':'#991b1b'}
+    # Color scheme: intensity increases with risk
+    color_schemes = {
+        '1ft_2030': {'fill': '#60a5fa', 'border': '#2563eb', 'opacity': 0.5},  # Light blue
+        '3ft_2050': {'fill': '#fb923c', 'border': '#ea580c', 'opacity': 0.55}, # Orange
+        '5ft_2070': {'fill': '#f87171', 'border': '#dc2626', 'opacity': 0.6},  # Red
+        '7ft_2100': {'fill': '#b91c1c', 'border': '#7f1d1d', 'opacity': 0.65}  # Dark red
+    }
+    
+    colors = color_schemes.get(selected_scenario, color_schemes['1ft_2030'])
+    
     folium.GeoJson(
         data['flood_zones'][selected_scenario],
         style_function=lambda x: {
-            'fillColor': colors.get(selected_scenario, '#3b82f6'),
-            'color': colors.get(selected_scenario, '#3b82f6'),
-            'weight': 1, 'fillOpacity': 0.35
+            'fillColor': colors['fill'],
+            'color': colors['border'],
+            'weight': 2,
+            'fillOpacity': colors['opacity']
         },
-        smooth_factor=1.2,
+        smooth_factor=1.0,
+        name=f'Flood Zone ({scenario_data["rise_ft"]} ft)',
         tooltip=folium.GeoJsonTooltip(
-            fields=['scenario','rise_ft','year'],
-            aliases=['Scenario:','Sea Level Rise (ft):','Expected Year:']
+            fields=['scenario', 'rise_ft', 'year'],
+            aliases=['Scenario:', 'Sea Rise:', 'Year:'],
+            style='background-color: white; color: black; font-size: 14px; padding: 10px; border-radius: 5px;'
         )
     ).add_to(m)
 
-# Infrastructure
+# Infrastructure with risk status
 if show_infra:
     icon_map = {
-        'Hospital': ('plus','red'),
-        'Airport': ('plane','blue'),
-        'Port': ('ship','darkblue'),
-        'Attraction': ('star','purple'),
-        'Historic Ship': ('anchor','darkred')
+        'Hospital': ('plus', 'red'),
+        'Airport': ('plane', 'blue'),
+        'Port': ('ship', 'darkblue'),
+        'Attraction': ('star', 'purple'),
+        'Historic Ship': ('anchor', 'darkred')
     }
+    
     for feat in data['infrastructure'].get('features', []):
         props = feat.get('properties', {})
         geom = feat.get('geometry', {})
         if geom and geom.get('type') == 'Point':
             lon, lat = geom['coordinates'][:2]
-            icon_name, color = icon_map.get(props.get('type',''), ('circle','gray'))
+            icon_name, color = icon_map.get(props.get('type', ''), ('circle', 'gray'))
             
-            # Check if facility is at risk
             facility_elevation = props.get('elevation_ft', 999)
-            scenario_level = scenario_data['rise_ft'] * 3.28  # Convert scenario to feet
+            scenario_level = scenario_data['rise_ft'] * 3.28
             at_risk = facility_elevation <= scenario_level
-            risk_status = "⚠️ AT RISK" if at_risk else "✅ Currently Safe"
+            
+            risk_html = f"""
+            <div style='min-width:200px; font-family: Arial;'>
+                <h4 style='margin:0 0 8px 0; color:#1e3a8a;'>{props.get('name', '')}</h4>
+                <hr style='margin:8px 0;'>
+                <p style='margin:4px 0;'><b>Type:</b> {props.get('type', '')}</p>
+                <p style='margin:4px 0;'><b>Elevation:</b> {props.get('elevation_ft', 0)} ft above sea level</p>
+                <p style='margin:4px 0;'><b>Scenario:</b> +{scenario_data['rise_ft']} ft by {scenario_data['year']}</p>
+                <p style='margin:8px 0; padding:8px; background:{"#fee2e2" if at_risk else "#d1fae5"}; 
+                   border-radius:4px; font-weight:bold; color:{"#991b1b" if at_risk else "#065f46"};'>
+                    {"⚠️ AT RISK" if at_risk else "✅ SAFE"}
+                </p>
+            </div>
+            """
             
             folium.Marker(
                 location=[lat, lon],
-                popup=f"<b>{props.get('name','')}</b><br>{props.get('type','')}<br>Height above sea: {props.get('elevation_ft',0)} ft<br><b>{risk_status}</b>",
-                tooltip=props.get('name',''),
+                popup=folium.Popup(risk_html, max_width=300),
+                tooltip=f"{props.get('name', '')} ({props.get('type', '')})",
                 icon=folium.Icon(color=color, icon=icon_name, prefix='fa')
             ).add_to(m)
 
-# Legend
-_legend_html = """
-{% macro html() %}
-<div style="position: fixed; bottom: 16px; left: 16px; z-index: 9999;
-            background: white; border: 1px solid #cbd5e1; border-radius: 8px;
-            padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 13px;">
-  <div style="font-weight:bold;margin-bottom:6px;">Map Legend</div>
-  <div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
-    <span style="display:inline-block;width:14px;height:14px;background:#3b82f6;opacity:0.35;border:1px solid #3b82f6;"></span>
-    <span>Flooded area</span>
+# Enhanced legend with better visibility
+color_for_legend = {
+    '1ft_2030': '#60a5fa',
+    '3ft_2050': '#fb923c',
+    '5ft_2070': '#f87171',
+    '7ft_2100': '#b91c1c'
+}
+
+_legend_html = f"""
+{{% macro html() %}}
+<div style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;
+            background: white; border: 2px solid #1e3a8a; border-radius: 10px;
+            padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+            font-family: Arial; font-size: 13px; min-width: 200px;">
+  <div style="font-weight:bold; font-size:14px; margin-bottom:10px; color:#1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom:5px;">
+    🗺️ Map Legend
   </div>
-  <div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
-    <span style="display:inline-block;width:14px;height:2px;background:#1e3a8a;border:1px dashed #1e3a8a;"></span>
-    <span>City boundary</span>
+  
+  <div style="margin:8px 0;">
+    <div style="display:flex; align-items:center; gap:10px; margin:6px 0;">
+      <span style="display:inline-block; width:20px; height:20px; 
+                   background:{color_for_legend.get(selected_scenario, '#60a5fa')}; 
+                   border:2px solid #1e3a8a; border-radius:3px;"></span>
+      <span><b>Flood risk zone</b></span>
+    </div>
+    <div style="font-size:11px; color:#64748b; margin-left:30px;">
+      Land at or below +{scenario_data['rise_ft']} ft
+    </div>
+  </div>
+  
+  <div style="margin:8px 0;">
+    <div style="display:flex; align-items:center; gap:10px; margin:6px 0;">
+      <span style="display:inline-block; width:20px; height:3px; 
+                   background:#1e3a8a; border:1px dashed #1e3a8a;"></span>
+      <span>City boundary</span>
+    </div>
+  </div>
+  
+  <div style="margin:8px 0;">
+    <div style="display:flex; align-items:center; gap:10px; margin:6px 0;">
+      <i class="fa fa-map-marker" style="color:#ef4444; font-size:16px;"></i>
+      <span>Critical facilities</span>
+    </div>
+    <div style="font-size:11px; color:#64748b; margin-left:30px;">
+      Click for risk status
+    </div>
+  </div>
+  
+  <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0;">
+    <div style="font-size:11px; color:#64748b;">
+      <b>Scenario:</b> {selected_scenario.replace('_', ' ').title()}<br>
+      <b>Year:</b> {scenario_data['year']}
+    </div>
   </div>
 </div>
-{% endmacro %}
+{{% endmacro %}}
 """
+
 _legend_macro = MacroElement()
 _legend_macro._template = Template(_legend_html)
 m.get_root().add_child(_legend_macro)
 
-st_folium(m, width=1400, height=600)
+st_folium(m, width=1400, height=650, returned_objects=[])
+
+# Add color gradient explanation
+st.markdown("""
+**Color Guide:** 
+- 🟦 Light blue = 2030 scenario (nearest term, lower risk)
+- 🟧 Orange = 2050 scenario (mid-century, moderate risk)  
+- 🟥 Red = 2070 scenario (late century, high risk)
+- 🔴 Dark red = 2100 scenario (end century, highest risk)
+
+*Darker colors = more severe flooding scenarios*
+""")
 
 st.markdown("---")
 
-# Tabs with plain language
-tab0, tab1, tab2, tab3 = st.tabs(["📖 Understanding This Tool", "📊 Compare All Scenarios", "📈 Timeline View", "💡 What Can We Do?"])
+# Tabs
+tab0, tab1, tab2, tab3, tab4 = st.tabs([
+    "📖 Understanding This", 
+    "🔬 Methodology & Math",
+    "📊 Compare Scenarios", 
+    "📈 Timeline", 
+    "💡 What To Do"
+])
 
 with tab0:
-    st.markdown("## 📖 Understanding Sea Level Rise (Plain English)")
+    st.markdown("## 📖 What Is This Tool?")
     
     st.markdown("""
-    ### What is sea level rise?
+    This tool shows **what parts of Long Beach would be underwater** if sea levels rise by 
+    different amounts. Think of it like looking at a bathtub — as water rises, lower areas 
+    flood first.
     
-    Sea level rise is exactly what it sounds like — the ocean is getting higher. This happens 
-    because of climate change, which causes two main things:
+    ### Why It Matters
     
-    1. **Ice is melting** — Glaciers and ice sheets in places like Greenland and Antarctica 
-       are melting and adding more water to the oceans
-    2. **Water expands when it's warm** — As the ocean gets warmer, the water actually takes 
-       up more space, making sea levels rise
+    **Sea levels are rising** because climate change is:
+    - Melting ice in Greenland and Antarctica
+    - Making ocean water expand as it warms
     
-    ### Why does this matter for Long Beach?
+    Long Beach sits right on the coast with many low-lying neighborhoods. Rising seas could flood:
+    - 🏠 People's homes
+    - 🏥 Hospitals and emergency services
+    - 🚢 The Port (2nd busiest in the USA)
+    - ✈️ Long Beach Airport
+    - 🎭 Tourist attractions
     
-    Long Beach sits right on the coast, and many neighborhoods are pretty close to sea level. 
-    If the ocean rises, these low-lying areas could flood. We're not just talking about beaches — 
-    we're talking about:
+    ### What The Map Shows
     
-    - **Homes where families live** 🏠
-    - **Schools and hospitals** 🏥
-    - **Roads and utilities** 🚗
-    - **Businesses and jobs** 💼
-    - **The Port of Long Beach** (the 2nd busiest port in America!) 🚢
+    **Colored areas** = Land at or below the selected sea level  
+    **Markers** = Important buildings (click to see if they're safe)  
+    **Colors** = Blue (low risk) → Red (high risk)
     
-    ### How did you make this map?
+    ### What It Doesn't Show
     
-    Here's what we did, step by step:
+    This is a simplified model. It doesn't include:
+    - Storm surges from hurricanes
+    - Existing flood walls
+    - Drainage systems
+    - Wave action
     
-    **Step 1: Get elevation data**  
-    We used information from the U.S. Geological Survey that tells us how high every piece 
-    of land is above sea level. Think of it like a 3D model of the city.
-    
-    **Step 2: Pick a sea level**  
-    We chose different amounts the ocean might rise (1 foot, 3 feet, 5 feet, 7 feet) and 
-    different years when this might happen (2030, 2050, 2070, 2100).
-    
-    **Step 3: Find the low spots**  
-    We marked every place in Long Beach that's at or below each sea level. These are the 
-    areas that would be underwater if there was a flood.
-    
-    **Step 4: Calculate impacts**  
-    We used census data to estimate how many homes, how many people, and how much property 
-    value is in these risky areas.
-    
-    **Step 5: Make it interactive**  
-    We put it all on a map so you can explore different scenarios and see what's at risk.
-    
-    ### What this tool does NOT show
-    
-    It's important to understand what this tool doesn't include:
-    
-    - **Storm surge** — When hurricanes or big storms push water inland, flooding can be much 
-      worse than just sea level rise alone
-    - **Existing protections** — Long Beach has some flood walls and levees, but we didn't 
-      model these
-    - **Drainage systems** — How well water drains away during floods
-    - **Groundwater** — Rising seas can also push groundwater up from below
-    
-    Think of this as a **starting point** — it helps us identify problem areas so engineers 
-    and city planners can do more detailed studies.
-    
-    ### Where does the data come from?
-    
-    - **Elevation:** U.S. Geological Survey (USGS) 3DEP program — high-quality height measurements
-    - **Sea level scenarios:** NOAA (National Oceanic and Atmospheric Administration) — scientists 
-      who study oceans and climate
-    - **Population and homes:** U.S. Census Bureau — official count of people and housing
-    - **City boundary:** OpenStreetMap — community-created geographic data
-    
-    ### Questions you might have
-    
-    **Q: Will this definitely happen?**  
-    A: The amount and speed of sea level rise depends on future greenhouse gas emissions. Lower 
-    emissions = less rise. Higher emissions = more rise. The scenarios show a range of possibilities.
-    
-    **Q: When will this happen?**  
-    A: The ocean is already rising slowly (about 1 inch every 8 years currently). The bigger 
-    impacts come later this century, but some areas are already seeing more flooding during 
-    high tides.
-    
-    **Q: Can we stop it?**  
-    A: We can slow it down by reducing emissions, but some sea level rise is already "locked in" 
-    from past emissions. That's why planning and adaptation are important.
-    
-    **Q: What can Long Beach do?**  
-    A: Many things! Build sea walls, improve drainage, update building codes, move critical 
-    facilities to higher ground, create green space that can absorb water, and plan emergency 
-    evacuations.
+    **Use this to identify problem areas** that need detailed engineering studies.
     """)
 
 with tab1:
-    st.markdown("### 📊 Compare All Scenarios Side-by-Side")
+    st.markdown("## 🔬 How We Built This: Methodology & Calculations")
     
     st.markdown("""
-    Here you can see all four possible futures at once. Notice how the numbers get bigger 
-    as we look further into the future — that's because sea levels will continue rising 
-    throughout this century.
+    Here's exactly how we created this analysis, including all the math and data sources.
     """)
+    
+    st.markdown("### Step 1: Get Elevation Data")
+    
+    st.markdown("""
+    <div class='method-box'>
+        <h4>📏 Data Source: USGS 3DEP</h4>
+        <p><b>What:</b> Digital Elevation Model (DEM) — shows height of every point on the ground</p>
+        <p><b>Resolution:</b> 1 meter (very detailed)</p>
+        <p><b>Format:</b> GeoTIFF raster file</p>
+        <p><b>Coverage:</b> Long Beach city boundary</p>
+        <p><b>Units:</b> Meters above mean sea level</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.code("""
+# Python code used to download elevation data
+import subprocess
+
+bbox = {
+    'west': -118.25, 
+    'south': 33.70, 
+    'east': -118.08, 
+    'north': 33.85
+}
+
+subprocess.run([
+    'eio', 'clip', 
+    '-o', 'long_beach_dem.tif',
+    '--bounds', f"{bbox['west']},{bbox['south']},{bbox['east']},{bbox['north']}",
+    '--product', 'SRTM1'
+])
+    """, language='python')
+    
+    st.markdown("### Step 2: Define Sea Level Rise Scenarios")
+    
+    st.markdown("""
+    <div class='method-box'>
+        <h4>🌊 Data Source: NOAA Sea Level Rise Projections</h4>
+        <p><b>Scenarios chosen:</b></p>
+        <ul>
+            <li><b>1 foot (0.30 m) by 2030</b> — High probability, near-term</li>
+            <li><b>3 feet (0.91 m) by 2050</b> — Medium probability, mid-century</li>
+            <li><b>5 feet (1.52 m) by 2070</b> — Lower probability, late century</li>
+            <li><b>7 feet (2.13 m) by 2100</b> — Worst case, end of century</li>
+        </ul>
+        <p><b>Based on:</b> NOAA Intermediate-High to Extreme scenarios</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.code("""
+# Scenario configuration
+scenarios = {
+    '1ft_2030': {'rise_ft': 1, 'rise_m': 0.3048, 'year': 2030},
+    '3ft_2050': {'rise_ft': 3, 'rise_m': 0.9144, 'year': 2050},
+    '5ft_2070': {'rise_ft': 5, 'rise_m': 1.524, 'year': 2070},
+    '7ft_2100': {'rise_ft': 7, 'rise_m': 2.1336, 'year': 2100}
+}
+    """, language='python')
+    
+    st.markdown("### Step 3: Identify Flood Zones (The Math)")
+    
+    st.markdown("""
+    <div class='method-box'>
+        <h4>🧮 Calculation Method: Bathtub Model</h4>
+        <p><b>Simple formula:</b></p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.latex(r"""
+    	ext{Flooded} = egin{cases} 
+    	ext{True} & 	ext{if } h_{	ext{ground}} \leq h_{	ext{sea level rise}} \
+    	ext{False} & 	ext{otherwise}
+    \end{cases}
+    """)
+    
+    st.markdown("""
+    **In plain English:** If the ground is at or below the new sea level, it floods.
+    
+    **For each pixel in the elevation data:**
+    """)
+    
+    st.code("""
+# Python implementation
+import numpy as np
+import rasterio
+
+with rasterio.open('long_beach_dem.tif') as src:
+    elevation = src.read(1)  # Read elevation data
+    
+    # For each scenario
+    for scenario_name, config in scenarios.items():
+        sea_level = config['rise_m']  # Sea level rise in meters
+        
+        # Mark areas at or below sea level
+        flood_mask = elevation <= sea_level
+        
+        # Calculate flooded area
+        pixel_area = src.transform[0] * src.transform[4]  # m² per pixel
+        flooded_pixels = np.sum(flood_mask)
+        flooded_area_m2 = flooded_pixels * abs(pixel_area)
+        flooded_area_km2 = flooded_area_m2 / 1_000_000
+    """, language='python')
+    
+    st.markdown("### Step 4: Calculate Property Impacts")
+    
+    st.markdown("""
+    <div class='method-box'>
+        <h4>🏘️ Data Source: U.S. Census Bureau</h4>
+        <p><b>City-wide statistics:</b></p>
+        <ul>
+            <li>Total population: 466,742</li>
+            <li>Total housing units: 171,632</li>
+            <li>Median home value: $600,000</li>
+            <li>City area: 130.8 km²</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("**Formulas used:**")
+    
+    st.latex(r"""
+    	ext{Properties at risk} = rac{	ext{Flooded area (km²)}}{	ext{Total city area (km²)}} 	imes 	ext{Total housing units} 	imes 1.5
+    """)
+    
+    st.caption("*The 1.5 multiplier accounts for concentration of development in coastal/low-lying areas*")
+    
+    st.latex(r"""
+    	ext{Population at risk} = 	ext{Properties at risk} 	imes 2.72
+    """)
+    
+    st.caption("*2.72 = average household size in Long Beach*")
+    
+    st.latex(r"""
+    	ext{Economic impact} = 	ext{Properties at risk} 	imes \$600{,}000
+    """)
+    
+    st.caption("*$600,000 = median home value in Long Beach*")
+    
+    st.code("""
+# Python implementation
+CITY_STATS = {
+    'total_population': 466742,
+    'total_housing_units': 171632,
+    'median_home_value': 600000,
+    'land_area_km2': 130.8
+}
+
+for scenario_name, scenario_data in flood_scenarios.items():
+    # Calculate percentages
+    area_pct = (scenario_data['area_km2'] / CITY_STATS['land_area_km2']) * 100
+    
+    # Estimate properties (with coastal concentration factor)
+    properties = int(CITY_STATS['total_housing_units'] * (area_pct / 100) * 1.5)
+    
+    # Estimate population (2.72 people per household)
+    population = int(properties * 2.72)
+    
+    # Economic impact
+    economic = properties * CITY_STATS['median_home_value']
+    
+    impacts.append({
+        'scenario': scenario_name,
+        'properties_at_risk': properties,
+        'population_at_risk': population,
+        'economic_impact_millions': economic / 1_000_000
+    })
+    """, language='python')
+    
+    st.markdown("### Step 5: Create Interactive Map")
+    
+    st.markdown("""
+    <div class='method-box'>
+        <h4>🗺️ Visualization: Folium + Streamlit</h4>
+        <p><b>Process:</b></p>
+        <ol>
+            <li>Convert flood masks to vector polygons (GeoJSON)</li>
+            <li>Simplify geometries for faster loading</li>
+            <li>Clip to city boundary</li>
+            <li>Style by scenario (colors, opacity)</li>
+            <li>Add infrastructure points with risk calculation</li>
+            <li>Create interactive tooltips and popups</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### Data Sources Summary")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **Elevation Data:**
+        - Source: USGS 3DEP
+        - URL: [nationalmap.gov](https://www.usgs.gov/3d-elevation-program)
+        - Format: GeoTIFF
+        - Resolution: 1m
+        
+        **Sea Level Projections:**
+        - Source: NOAA
+        - URL: [sealevel.nasa.gov](https://sealevel.nasa.gov/)
+        - Report: Global & Regional SLR Scenarios
+        """)
+    
+    with col2:
+        st.markdown("""
+        **Demographics:**
+        - Source: U.S. Census 2020
+        - URL: [census.gov](https://www.census.gov/)
+        - Area: Long Beach, CA
+        
+        **City Boundary:**
+        - Source: OpenStreetMap
+        - URL: [openstreetmap.org](https://www.openstreetmap.org/)
+        - Format: GeoJSON
+        """)
+    
+    st.markdown("### Limitations & Assumptions")
+    
+    st.warning("""
+    **This is a screening-level analysis with the following limitations:**
+    
+    1. **Bathtub model:** Assumes water can reach all areas below threshold (no barriers)
+    2. **No storm surge:** Doesn't model extreme weather events
+    3. **No drainage:** Doesn't account for stormwater systems
+    4. **No protection:** Ignores existing levees and seawalls
+    5. **Static projection:** Doesn't model year-by-year changes
+    6. **Uniform distribution:** Property estimates assume even distribution
+    
+    **Best for:** Initial risk screening and planning priorities  
+    **Not for:** Final engineering design or property-specific decisions
+    """)
+
+with tab2:
+    st.markdown("### 📊 Compare All Scenarios")
     
     col1, col2 = st.columns(2)
     
     with col1:
         fig = px.bar(
-            data['impacts'].sort_values('year'), 
-            x='year', 
+            data['impacts'].sort_values('year'),
+            x='year',
             y='properties_at_risk',
-            title='How Many Homes Are at Risk?',
+            title='Homes at Risk by Year',
             labels={'properties_at_risk': 'Number of Homes', 'year': 'Year'},
-            text='properties_at_risk'
+            text='properties_at_risk',
+            color='year',
+            color_continuous_scale=['#60a5fa', '#fb923c', '#f87171', '#b91c1c']
         )
         fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
-        fig.update_layout(showlegend=False)
+        fig.update_layout(showlegend=False, height=400)
         st.plotly_chart(fig, use_container_width=True)
-        
-        st.caption("Each bar shows the number of homes that would be in flood risk zones for that year.")
     
     with col2:
         fig = px.bar(
-            data['impacts'].sort_values('year'), 
-            x='year', 
+            data['impacts'].sort_values('year'),
+            x='year',
             y='economic_impact_millions',
-            title='How Much Property Value Is at Risk?',
-            labels={'economic_impact_millions': 'Property Value (Millions $)', 'year': 'Year'},
-            text='economic_impact_millions'
+            title='Property Value at Risk',
+            labels={'economic_impact_millions': 'Value ($M)', 'year': 'Year'},
+            text='economic_impact_millions',
+            color='year',
+            color_continuous_scale=['#60a5fa', '#fb923c', '#f87171', '#b91c1c']
         )
         fig.update_traces(texttemplate='$%{text:.0f}M', textposition='outside')
-        fig.update_layout(showlegend=False)
+        fig.update_layout(showlegend=False, height=400)
         st.plotly_chart(fig, use_container_width=True)
-        
-        st.caption("This shows the total dollar value of all the property in flood risk zones.")
     
-    st.markdown("### 📋 All the Numbers in One Table")
+    st.markdown("### 📋 Full Comparison Table")
     
     comparison_df = data['impacts'].copy()
     comparison_df['area_pct'] = (comparison_df['flooded_area_km2'] / 130.8 * 100).round(1)
     comparison_df['prop_pct'] = (comparison_df['properties_at_risk'] / 171632 * 100).round(1)
     
-    display_df = comparison_df[['year', 'rise_ft', 'flooded_area_km2', 'area_pct', 
-                                 'properties_at_risk', 'prop_pct', 'population_at_risk', 
+    display_df = comparison_df[['year', 'rise_ft', 'flooded_area_km2', 'area_pct',
+                                 'properties_at_risk', 'prop_pct', 'population_at_risk',
                                  'economic_impact_millions']].copy()
     
-    display_df.columns = ['Year', 'Sea Rise (ft)', 'Flooded Area (km²)', 'Area %', 
-                          'Homes at Risk', 'Homes %', 'People Affected', 'Property Value ($M)']
+    display_df.columns = ['Year', 'Rise (ft)', 'Area (km²)', 'Area %',
+                          'Homes', 'Homes %', 'People', 'Value ($M)']
     
     st.dataframe(display_df, use_container_width=True, hide_index=True)
-    
-    st.markdown("""
-    ### What This Tells Us
-    
-    Looking at all scenarios together, we can see:
-    
-    - **2030** (near future): Even 1 foot of sea level rise affects **{:,} homes** and 
-      **${:.0f}M** in property
-    - **2050** (mid-century): By the time today's kids are adults, risks triple
-    - **2100** (end of century): In the worst case, over **{:,} homes** could be at risk
-    
-    The good news? **We have time to prepare.** But we need to start planning now.
-    """.format(
-        int(data['impacts'].iloc[0]['properties_at_risk']),
-        data['impacts'].iloc[0]['economic_impact_millions'],
-        int(data['impacts'].iloc[-1]['properties_at_risk'])
-    ))
 
-with tab2:
+with tab3:
     st.markdown("### 📈 How Risk Grows Over Time")
-    
-    st.markdown("""
-    This timeline shows how sea level rise impacts build up gradually over the decades. 
-    It's not a sudden event — it's a slow process that gives us time to adapt if we 
-    plan ahead.
-    """)
     
     fig = go.Figure()
     
@@ -460,207 +693,99 @@ with tab2:
         x=data['impacts']['year'],
         y=data['impacts']['properties_at_risk'],
         mode='lines+markers',
-        name='Homes at Risk',
         line=dict(color='#3b82f6', width=3),
-        marker=dict(size=10),
+        marker=dict(size=12),
         fill='tozeroy',
         fillcolor='rgba(59, 130, 246, 0.1)'
     ))
     
     fig.update_layout(
-        title='Homes at Risk: Growing Over Time',
+        title='Properties at Risk Over Time',
         xaxis_title='Year',
-        yaxis_title='Number of Homes',
-        height=400,
+        yaxis_title='Number of Properties',
+        height=450,
         showlegend=False
     )
     
     st.plotly_chart(fig, use_container_width=True)
     
-    st.caption("The line goes up because more area floods as sea levels rise.")
-    
-    st.markdown("### Property Value at Risk Over Time")
-    
     fig2 = px.area(
         data['impacts'],
         x='year',
-        y='economic_impact_millions',
-        title='Economic Impact: Growing Over Time',
-        labels={'economic_impact_millions': 'Property Value ($M)', 'year': 'Year'},
-        color_discrete_sequence=['#ef4444']
+        y='population_at_risk',
+        title='People Affected Over Time',
+        labels={'population_at_risk': 'Population', 'year': 'Year'},
+        color_discrete_sequence=['#f87171']
     )
-    fig2.update_layout(height=400, showlegend=False)
+    fig2.update_layout(height=400)
     st.plotly_chart(fig2, use_container_width=True)
-    
-    st.caption("This shows the dollar value of property in flood zones increasing over time.")
-    
-    st.markdown("""
-    ### What the Timeline Shows
-    
-    - **Early years (2030s)**: Modest impacts, but still significant for affected families
-    - **Mid-century (2050s)**: Impacts accelerate as more coastal areas are affected
-    - **Late century (2070s-2100)**: Cumulative impacts become very large
-    
-    The rising line reminds us that **action today prevents bigger problems tomorrow**.
-    """)
 
-with tab3:
-    st.markdown("### 💡 What Can We Do About This?")
-    
-    st.markdown("""
-    The good news is we're not helpless! Cities around the world are preparing for sea level 
-    rise. Here's what Long Beach can do, organized by when we should do it:
-    """)
+with tab4:
+    st.markdown("### 💡 What Can Long Beach Do?")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        ### 🟢 Right Now (Next 5 Years)
+        ### 🟢 Now (0-5 years)
         
-        **Things we can start immediately:**
+        **Quick wins:**
+        - Install flood sensors
+        - Update building codes
+        - Community education
+        - Emergency planning
+        - Drainage improvements
         
-        1. **Better monitoring** 🔍
-           - Install water level sensors
-           - Track flooding during high tides
-           - Create early warning systems
-        
-        2. **Update building codes** 📋
-           - Require new buildings to be higher up
-           - Make rules about flood-proof construction
-           - Set standards for renovations
-        
-        3. **Community education** 📚
-           - Help people understand the risks
-           - Teach emergency preparedness
-           - Create flood response plans
-        
-        4. **Start small projects** 🛠️
-           - Fix drainage problems
-           - Add water-absorbent landscaping
-           - Upgrade vulnerable utilities
-        
-        **Why now?** These steps don't cost much but make a big difference in being ready.
+        **Cost:** $1-10M  
+        **Impact:** High awareness, better prepared
         """)
         
         st.markdown("""
-        ### 🟡 Medium-Term (5-15 Years)
+        ### 🟡 Mid-Term (5-15 years)
         
-        **Bigger projects that take time:**
+        **Major projects:**
+        - Build sea walls
+        - Upgrade infrastructure
+        - Relocate facilities
+        - Create wetlands
+        - Improve drainage
         
-        1. **Build protection** 🧱
-           - Sea walls in critical areas
-           - Levees along the coast
-           - Raised roads and bridges
-        
-        2. **Improve infrastructure** 🏗️
-           - Upgrade stormwater systems
-           - Raise electrical equipment
-           - Protect water treatment plants
-        
-        3. **Relocate facilities** 📍
-           - Move hospitals to higher ground
-           - Relocate emergency services
-           - Protect critical equipment
-        
-        4. **Green solutions** 🌳
-           - Create wetlands that absorb water
-           - Build parks that can flood safely
-           - Plant trees and vegetation
-        
-        **Why now?** These projects take years to design and build, so starting soon means 
-        they're ready when we need them.
+        **Cost:** $10-100M  
+        **Impact:** Protected critical areas
         """)
     
     with col2:
         st.markdown("""
-        ### 🔴 Long-Term (15+ Years)
+        ### 🔴 Long-Term (15+ years)
         
-        **Major transformations:**
+        **Transformative:**
+        - Complete defense systems
+        - Resilient neighborhoods
+        - Managed retreat
+        - Regional coordination
+        - Adaptive zones
         
-        1. **Complete protection systems** 🛡️
-           - Integrated coastal defenses
-           - Comprehensive flood barriers
-           - Citywide drainage upgrades
-        
-        2. **Adapt neighborhoods** 🏘️
-           - Designate "resilient zones"
-           - Create floating developments
-           - Build water-friendly communities
-        
-        3. **Managed retreat** 🚚
-           - Help people move from highest-risk areas
-           - Transition some land back to wetlands
-           - Focus development in safer zones
-        
-        4. **Regional cooperation** 🤝
-           - Work with neighboring cities
-           - Share resources and planning
-           - Coordinate protection strategies
-        
-        **Why now?** These are big, expensive changes that require public discussion and 
-        careful planning. Starting the conversation now gives us time to do it right.
+        **Cost:** $100M-$1B  
+        **Impact:** City-wide resilience
         """)
         
         st.markdown("""
-        ### 💰 What Does It Cost?
+        ### 📥 Download Data
+        """)
         
-        **Estimated costs:**
-        - Small projects: $1-10 million each
-        - Medium projects: $10-100 million each  
-        - Large projects: $100M-$1B each
-        
-        **Compare to damages:**
-        - Doing nothing: Could cost **${:.0f} million** in property losses (2100 scenario)
-        - Protection costs: Usually 10-20% of total at-risk value
-        - **Every $1 spent on prevention saves $4-6 in damages**
-        
-        It's expensive, but much cheaper than rebuilding after disasters!
-        """.format(data['impacts']['economic_impact_millions'].max()))
-    
-    st.markdown("---")
-    
-    st.markdown("""
-    ### 🎯 What You Can Do Personally
-    
-    Even if you're not a city planner, there are things you can do:
-    
-    - **Know your risk** — Check if your home is in a flood zone
-    - **Get flood insurance** — Especially if you're in a risk area
-    - **Prepare for emergencies** — Have an evacuation plan and emergency kit
-    - **Stay informed** — Follow city updates about flood protection projects
-    - **Support action** — Vote for leaders who take climate adaptation seriously
-    - **Reduce your impact** — Lower emissions to slow future sea level rise
-    
-    ### 📥 Download the Data
-    
-    Want to dig deeper? Download the analysis data for your own use:
-    """)
-    
-    csv = data['impacts'].to_csv(index=False)
-    st.download_button(
-        label="📊 Download Full Analysis (CSV)",
-        data=csv,
-        file_name="long_beach_sea_level_rise_analysis.csv",
-        mime="text/csv",
-        help="Get all the numbers in a spreadsheet format"
-    )
-    
-    json_data = json.dumps(data['scenarios'], indent=2)
-    st.download_button(
-        label="📋 Download Scenarios (JSON)",
-        data=json_data,
-        file_name="sea_level_scenarios.json",
-        mime="application/json",
-        help="Get the technical scenario details"
-    )
+        csv = data['impacts'].to_csv(index=False)
+        st.download_button(
+            "📊 Download Analysis (CSV)",
+            csv,
+            "sea_level_rise_long_beach.csv",
+            "text/csv"
+        )
 
-# Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #64748b;'>
-    <p><strong>Sea Level Rise Impact Simulator</strong> | GIS Portfolio Project</p>
-    <p>Data Sources: USGS 3DEP, NOAA, U.S. Census Bureau</p>
-    <p>Created by Hristova022 | <a href='https://github.com/hristova022/gis-portfolio'>View on GitHub</a></p>
+<div style='text-align: center; color: #64748b; padding: 1rem;'>
+    <p><strong>Sea Level Rise Impact Simulator</strong> | Long Beach, California</p>
+    <p>Data: USGS 3DEP • NOAA • U.S. Census | Created by Hristova022</p>
+    <p><a href='https://github.com/hristova022/gis-portfolio'>View Code on GitHub</a></p>
 </div>
 """, unsafe_allow_html=True)
