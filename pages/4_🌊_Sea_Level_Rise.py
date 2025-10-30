@@ -133,7 +133,16 @@ st.markdown("---")
 # Map
 st.markdown("### 🗺️ Flood Risk Map")
 
-st.info("**How to read:** Blue areas show land at or below the sea level. Click markers for details.")
+# Dynamic info message based on scenario
+color_names = {
+    '1ft_2030': 'Blue',
+    '3ft_2050': 'Orange',
+    '5ft_2070': 'Red',
+    '7ft_2100': 'Dark red'
+}
+color_name = color_names.get(selected_scenario, 'Blue')
+
+st.info(f"**How to read:** {color_name} areas show land at or below +{scenario_data['rise_ft']} ft sea level by {scenario_data['year']}. Click markers for details.")
 
 bounds = _bounds_from_geojson(data['boundary'])
 center = [(bounds[1] + bounds[3]) / 2, (bounds[0] + bounds[2]) / 2]
@@ -206,18 +215,18 @@ _legend_html = f"""
 <div style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;
             background: white; border: 2px solid #333; border-radius: 8px;
             padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); 
-            font-family: Arial; font-size: 13px;">
-  <div style="font-weight:bold; margin-bottom:8px; color:#333;">Map Legend</div>
+            font-family: Arial; font-size: 13px; color: #000;">
+  <div style="font-weight:bold; margin-bottom:8px; color:#000;">Map Legend</div>
   <div style="display:flex; align-items:center; gap:8px; margin:4px 0;">
     <span style="display:inline-block; width:16px; height:16px; 
                  background:{colors.get(selected_scenario, '#3b82f6')}; 
                  opacity:0.35; border:1px solid #333;"></span>
-    <span>Flood zone</span>
+    <span style="color:#000;">Flood zone</span>
   </div>
   <div style="display:flex; align-items:center; gap:8px; margin:4px 0;">
     <span style="display:inline-block; width:16px; height:2px; 
                  background:#1e3a8a; border:1px dashed #1e3a8a;"></span>
-    <span>City boundary</span>
+    <span style="color:#000;">City boundary</span>
   </div>
 </div>
 {{% endmacro %}}
