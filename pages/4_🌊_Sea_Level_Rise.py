@@ -57,9 +57,12 @@ def load_data():
     
     data['flood_zones'] = {}
     for scenario in data['scenarios'].keys():
+        p_connected = base / f'flood_zone_{scenario}_connected.geojson'
         p_simple = base / f'flood_zone_{scenario}_simple.geojson'
         p_full = base / f'flood_zone_{scenario}.geojson'
-        if p_simple.exists():
+        if p_connected.exists():
+            data['flood_zones'][scenario] = _load_geojson(p_connected)
+        elif p_simple.exists():
             data['flood_zones'][scenario] = _load_geojson(p_simple)
         elif p_full.exists():
             data['flood_zones'][scenario] = _load_geojson(p_full)
